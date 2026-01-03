@@ -1,4 +1,5 @@
 // ==========================================
+// ==========================================
 // ১. ভেরিয়েবল এবং ইনিশিয়ালাইজেশন
 // ==========================================
 const socket = io();
@@ -15,8 +16,7 @@ if (token) {
     };
 }
 
-
-// ================= অথেনটিকেশন (OTP সহ) =================
+// ================= অথেনটিকেশন (সরাসরি - OTP ছাড়া) =================
 
 // ১. ইনপুট ফিল্ড বদলানো (ইমেইল/ফোন)
 function toggleRegInput(type) {
@@ -34,7 +34,10 @@ function toggleRegInput(type) {
 function toggleAuth() {
     const loginForm = document.getElementById('login-form');
     const regForm = document.getElementById('register-form');
+    
+    // OTP সেকশন থাকলে লুকিয়ে ফেলা
     const otpSection = document.getElementById('otp-section');
+    if(otpSection) otpSection.style.display = 'none';
 
     if (loginForm.style.display === 'none') {
         loginForm.style.display = 'block';
@@ -43,8 +46,6 @@ function toggleAuth() {
         loginForm.style.display = 'none';
         regForm.style.display = 'block';
     }
-    // OTP সেকশন রিসেট
-    if(otpSection) otpSection.style.display = 'none';
 }
 
 // ৩. লগআউট ফাংশন
@@ -53,11 +54,7 @@ function logout() {
     location.reload();
 }
 
-// ৪. রেজিস্ট্রেশন OTP রিকোয়েস্ট
-let tempRegData = {}; // সাময়িক ডাটা রাখার জন্য
-// ================= অথেনটিকেশন (OTP ছাড়া - ডাইরেক্ট) =================
-
-// ১. রেজিস্ট্রেশন ফাংশন
+// ৪. সরাসরি রেজিস্ট্রেশন ফাংশন
 async function register() {
     const username = document.getElementById('regUser').value;
     const identifier = document.getElementById('regIdentifier').value; // ইমেইল বা ফোন
@@ -73,7 +70,7 @@ async function register() {
     }
 
     try {
-        // বাটন লোডিং
+        // বাটন লোডিং ইফেক্ট
         const btn = document.querySelector('#register-form .btn-success');
         const oldText = btn.innerText;
         btn.innerText = "অপেক্ষা করুন...";
@@ -102,7 +99,7 @@ async function register() {
     }
 }
 
-// ২. লগিন ফাংশন
+// ৫. সরাসরি লগিন ফাংশন
 async function login() {
     const identifier = document.getElementById('loginId').value;
     const password = document.getElementById('loginPass').value;
@@ -110,7 +107,7 @@ async function login() {
     if (!identifier || !password) return alert("আইডি এবং পাসওয়ার্ড দিন!");
 
     try {
-        // বাটন লোডিং
+        // বাটন লোডিং ইফেক্ট
         const btn = document.querySelector('#login-form .btn-primary');
         const oldText = btn.innerText;
         btn.innerText = "লগিন হচ্ছে...";
@@ -141,64 +138,7 @@ async function login() {
     }
 }
 
-
-// ৬. লগিন OTP রিকোয়েস্ট
-let tempLoginUser = "";
-
-async function requestLoginOTP() {
-    const identifier = document.getElementById('loginId').value;
-    const password = document.getElementById('loginPass').value;
-
-    if (!identifier || !password) {
-        return alert("সব তথ্য দিন!");
-    }
-
-    const res = await fetch('/login-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password })
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-        tempLoginUser = data.username;
-
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('otp-section').style.display = 'block';
-
-        const btn = document.getElementById('verifyBtn');
-        btn.onclick = null;
-        btn.onclick = verifyLoginOTP;
-    } else {
-        alert(data.message);
-    }
-}
-
-
-// ৭. লগিন ভেরিফাই
-async function verifyLoginOTP() {
-    const otp = document.getElementById('otpInput').value;
-
-    const res = await fetch('/login-verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: tempLoginUser, otp })
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', data.username);
-
-        currentUser = data.username;
-        showApp();
-    } else {
-        alert(data.message);
-    }
-}
-
+// ... এরপর showApp() থেকে বাকি কোডগুলো আগের মতোই থাকবে ...
 // ==========================================
 // ৩. মেইন অ্যাপ কন্ট্রোল এবং নেভিগেশন
 // ==========================================
