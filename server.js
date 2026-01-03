@@ -37,13 +37,15 @@ mongoose.connect(mongoURI)
     .then(() => console.log("MongoDB Connected"))
     .catch(err => console.log(err));
 // --- স্কিমা ডিজাইন ---
-// ১. ইমেইল সেটআপ (এখন .env থেকে তথ্য নেবে)
+// server.js এ transporter আপডেট করুন
+
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: "smtp.gmail.com",
+    port: 465,       // এই পোর্টটি জিমেইলের জন্য সবচেয়ে ভালো
+    secure: true,    // 465 পোর্টের জন্য true দিতে হয়
     auth: {
-        // সরাসরি ইমেইলের বদলে process.env ব্যবহার করুন
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS  
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
     }
 });
 
