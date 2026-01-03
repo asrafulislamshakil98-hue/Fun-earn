@@ -23,7 +23,7 @@
             <h3>লগিন করুন</h3>
             <input type="text" id="loginId" placeholder="ইমেইল / ফোন / ইউজারনেম">
             <input type="password" id="loginPass" placeholder="পাসওয়ার্ড">
-            <button class="btn-primary" onclick="requestLoginOTP()">লগ ইন (OTP পাঠান)</button>
+            <button class="btn-primary" onclick="login()">লগ ইন</button>
             <div class="divider"></div>
             <button class="btn-secondary" onclick="toggleAuth()">নতুন একাউন্ট খুলুন</button>
         </div>
@@ -45,18 +45,9 @@
             <label style="font-size:12px; display:block; text-align:left;">জন্মতারিখ:</label>
             <input type="date" id="regBirthday" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; margin-bottom:10px;">
 
-            <button class="btn-success" onclick="requestRegOTP()">OTP পাঠান</button>
+            <button class="btn-success" onclick="register()">সাইন আপ</button>
             <div class="divider"></div>
             <button class="btn-secondary" onclick="toggleAuth()">লগিন পেইজে যান</button>
-        </div>
-
-        <!-- OTP ইনপুট বক্স (লুকানো থাকবে) -->
-        <div id="otp-section" style="display:none;">
-            <h3>OTP ভেরিফিকেশন</h3>
-            <p>আপনার টার্মিনালে (Console) OTP পাঠানো হয়েছে।</p>
-            <input type="text" id="otpInput" placeholder="4 সংখ্যার OTP দিন" style="text-align:center; letter-spacing:5px; font-size:20px;">
-            <button id="verifyBtn" class="btn-primary">যাচাই করুন</button>
-            <button class="btn-secondary" onclick="location.reload()" style="margin-top:10px;">বাতিল</button>
         </div>
 
     </div>

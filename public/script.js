@@ -15,6 +15,7 @@ if (token) {
     };
 }
 
+
 // ================= অথেনটিকেশন (OTP সহ) =================
 
 // ১. ইনপুট ফিল্ড বদলানো (ইমেইল/ফোন)
@@ -54,62 +55,90 @@ function logout() {
 
 // ৪. রেজিস্ট্রেশন OTP রিকোয়েস্ট
 let tempRegData = {}; // সাময়িক ডাটা রাখার জন্য
+// ================= অথেনটিকেশন (OTP ছাড়া - ডাইরেক্ট) =================
 
-async function requestRegOTP() {
+// ১. রেজিস্ট্রেশন ফাংশন
+async function register() {
     const username = document.getElementById('regUser').value;
-    const identifier = document.getElementById('regIdentifier').value;
+    const identifier = document.getElementById('regIdentifier').value; // ইমেইল বা ফোন
     const password = document.getElementById('regPass').value;
     const birthday = document.getElementById('regBirthday').value;
     
+    // রেডিও বাটন চেক (Email না Mobile)
     const typeElem = document.querySelector('input[name="regType"]:checked');
     const type = typeElem ? typeElem.value : 'email';
 
-    if (!username || !identifier || !password || !birthday) return alert("সব তথ্য দিন!");
+    if (!username || !identifier || !password || !birthday) {
+        return alert("সব তথ্য পূরণ করুন!");
+    }
 
     try {
-        const res = await fetch('/register-request', {
+        // বাটন লোডিং
+        const btn = document.querySelector('#register-form .btn-success');
+        const oldText = btn.innerText;
+        btn.innerText = "অপেক্ষা করুন...";
+        btn.disabled = true;
+
+        const res = await fetch('/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier, type })
+            body: JSON.stringify({ username, password, identifier, type, birthday })
         });
         const data = await res.json();
 
         if (data.success) {
-            alert("আপনার OTP হলো: " + data.serverOtp); // ডেমো অ্যালার্ট
-
-            tempRegData = { username, password, birthday, identifier, type };
-            
-            document.getElementById('register-form').style.display = 'none';
-            document.getElementById('otp-section').style.display = 'block';
-            document.getElementById('verifyBtn').onclick = verifyRegOTP;
+            alert(data.message);
+            toggleAuth(); // সফল হলে লগিন পেজে নিয়ে যাবে
         } else {
-           // message না থাকলে error দেখাবে
-         alert(data.message || data.error || "অজানা সমস্যা হয়েছে");
+            alert(data.message || data.error);
         }
-    } catch (err) { alert("সার্ভার এরর"); }
+        
+        btn.innerText = oldText;
+        btn.disabled = false;
+
+    } catch (err) {
+        console.log(err);
+        alert("সার্ভার এরর");
+    }
 }
 
-// ৫. রেজিস্ট্রেশন ভেরিফাই
-async function verifyRegOTP() {
-    const userOtp = document.getElementById('otpInput').value;
-    
-    if(userOtp.length !== 4) return alert("৪ সংখ্যার সঠিক OTP দিন");
+// ২. লগিন ফাংশন
+async function login() {
+    const identifier = document.getElementById('loginId').value;
+    const password = document.getElementById('loginPass').value;
+
+    if (!identifier || !password) return alert("আইডি এবং পাসওয়ার্ড দিন!");
 
     try {
-        const res = await fetch('/register-verify', {
+        // বাটন লোডিং
+        const btn = document.querySelector('#login-form .btn-primary');
+        const oldText = btn.innerText;
+        btn.innerText = "লগিন হচ্ছে...";
+        btn.disabled = true;
+
+        const res = await fetch('/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(tempRegData)
+            body: JSON.stringify({ identifier, password })
         });
         const data = await res.json();
-        
+
         if (data.success) {
-            alert(data.message);
-            location.reload(); 
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.username);
+            localStorage.setItem('profilePic', data.profilePic || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png");
+
+            currentUser = data.username;
+            showApp();
         } else {
-            alert(data.message);
+            alert(data.message || data.error);
+            btn.innerText = oldText;
+            btn.disabled = false;
         }
-    } catch(err) { alert("সমস্যা হয়েছে"); }
+    } catch (err) {
+        console.log(err);
+        alert("লগিন সমস্যা");
+    }
 }
 
 
@@ -119,55 +148,55 @@ let tempLoginUser = "";
 async function requestLoginOTP() {
     const identifier = document.getElementById('loginId').value;
     const password = document.getElementById('loginPass').value;
-    
-    if (!identifier || !password) return alert("সব তথ্য দিন!");
 
-    try {
-        const res = await fetch('/login-request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier, password })
-        });
-        const data = await res.json();
+    if (!identifier || !password) {
+        return alert("সব তথ্য দিন!");
+    }
 
-        if (data.success) {
-            alert("আপনার লগিন OTP হলো: " + data.serverOtp); // ডেমো অ্যালার্ট
+    const res = await fetch('/login-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password })
+    });
 
-            tempLoginUser = data.username;
-            
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('otp-section').style.display = 'block';
-            document.getElementById('verifyBtn').onclick = verifyLoginOTP;
-        } else {
-           // message না থাকলে error দেখাবে
-           alert(data.message || data.error || "অজানা সমস্যা হয়েছে");
-       }
-    } catch (err) { alert("সার্ভার এরর"); }
+    const data = await res.json();
+
+    if (data.success) {
+        tempLoginUser = data.username;
+
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('otp-section').style.display = 'block';
+
+        const btn = document.getElementById('verifyBtn');
+        btn.onclick = null;
+        btn.onclick = verifyLoginOTP;
+    } else {
+        alert(data.message);
+    }
 }
+
 
 // ৭. লগিন ভেরিফাই
 async function verifyLoginOTP() {
     const otp = document.getElementById('otpInput').value;
-    
-    try {
-        const res = await fetch('/login-verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: tempLoginUser, otp })
-        });
-        const data = await res.json();
 
-        if (data.success) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('username', data.username);
-            localStorage.setItem('profilePic', data.profilePic || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png");
-            
-            currentUser = data.username;
-            showApp();
-        } else {
-            alert(data.message);
-        }
-    } catch (err) { alert("সমস্যা হয়েছে"); }
+    const res = await fetch('/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: tempLoginUser, otp })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+
+        currentUser = data.username;
+        showApp();
+    } else {
+        alert(data.message);
+    }
 }
 
 // ==========================================

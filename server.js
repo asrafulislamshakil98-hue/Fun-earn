@@ -31,12 +31,12 @@ app.get('/', (req, res) => {
 // --- ১. ফাইলের উপরের দিকে (MongoDB কানেকশন আপডেট) ---
 
 // যদি অনলাইনে থাকে তো ওটা নিবে, না হলে লোকাল নিবে
+// ডাটাবেস কানেকশন সেটআপ (Dynamic)
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/socialApp';
 
 mongoose.connect(mongoURI)
     .then(() => console.log("MongoDB Connected"))
     .catch(err => console.log(err));
-// --- স্কিমা ডিজাইন ---
 // server.js এ transporter আপডেট করুন
 
 const transporter = nodemailer.createTransport({
@@ -196,33 +196,19 @@ io.on('connection', (socket) => {
 });
 
 // --- API Routes ---
-
-// --- ১. রেজিস্ট্রেশন রিকোয়েস্ট (OTP পাঠানো) ---
-app.post('/register-request', async (req, res) => {
+// --- ১. সহজ রেজিস্ট্রেশন (OTP ছাড়া) ---
+app.post('/register', async (req, res) => {
     try {
-        const { identifier, type } = req.body; // type = 'email' or 'mobile'
-        
-        // চেক করা এই ইমেইল/ফোন আগে আছে কিনা
+        const { username, password, identifier, type, birthday } = req.body;
+
+        // চেক করা ইউজার আগে আছে কিনা
         const query = type === 'email' ? { email: identifier } : { mobile: identifier };
-        const exist = await User.findOne(query);
-        if (exist) return res.json({ success: false, message: "এই ইমেইল/ফোন দিয়ে আগেই একাউন্ট খোলা আছে!" });
-
-        // OTP তৈরি (৪ ডিজিট)
-        const otp = Math.floor(1000 + Math.random() * 9000).toString();
+        const exist = await User.findOne({ $or: [query, { username: username }] });
         
-        console.log(`Reg OTP: ${otp}`);
+        if (exist) {
+            return res.json({ success: false, message: "এই ইউজারনেম বা ফোন/ইমেইল ইতিমধ্যে ব্যবহৃত হয়েছে!" });
+        }
 
-        // 👇 এখানে otp পাঠানো হচ্ছে যাতে অ্যালার্টে দেখানো যায়
-        res.json({ success: true, message: "OTP তৈরি হয়েছে!", serverOtp: otp }); 
-
-    } catch (err) { res.status(500).json({ error: "সমস্যা হয়েছে" }); }
-});
-
-// --- ২. ফাইনাল রেজিস্ট্রেশন (OTP ভেরিফাই করে একাউন্ট খোলা) ---
-app.post('/register-verify', async (req, res) => {
-    try {
-        const { username, password, birthday, identifier, type } = req.body;
-        
         const hashedPassword = await bcrypt.hash(password, 10);
         
         const newUser = new User({
@@ -230,45 +216,48 @@ app.post('/register-verify', async (req, res) => {
             password: hashedPassword,
             birthday: new Date(birthday),
             email: type === 'email' ? identifier : "",
-            mobile: type === 'mobile' ? identifier : ""
+            mobile: type === 'mobile' ? identifier : "",
+            coins: 50 // নতুন ইউজারকে বোনাস
         });
 
         await newUser.save();
         res.json({ success: true, message: "একাউন্ট তৈরি সফল! এখন লগিন করুন।" });
 
-    } catch (err) { 
-        console.log(err);
-        res.json({ success: false, message: "ইউজারনেমটি আগে থেকেই আছে বা অন্য সমস্যা।" }); 
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: "রেজিস্ট্রেশন সমস্যা" });
     }
 });
 
-// --- ৩. লগিন রিকোয়েস্ট (পাসওয়ার্ড চেক + OTP পাঠানো) ---
-app.post('/login-request', async (req, res) => {
+// --- ২. সহজ লগিন (OTP ছাড়া) ---
+app.post('/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
 
-        // ইমেইল অথবা মোবাইল দিয়ে ইউজার খোঁজা
+        // ইউজারনেম, ইমেইল বা ফোন দিয়ে খোঁজা
         const user = await User.findOne({ 
             $or: [{ email: identifier }, { mobile: identifier }, { username: identifier }] 
         });
 
         if (!user) return res.json({ success: false, message: "ইউজার পাওয়া যায়নি!" });
 
-        // পাসওয়ার্ড চেক
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.json({ success: false, message: "ভুল পাসওয়ার্ড!" });
 
-        // OTP তৈরি এবং সেভ করা
-        const otp = Math.floor(1000 + Math.random() * 9000).toString();
-        user.otp = otp;
-        await user.save();
+        const token = jwt.sign({ userId: user._id, username: user.username }, SECRET_KEY);
 
-        console.log(`Login OTP: ${otp}`);
-
-        // 👇 এখানেও otp পাঠানো হচ্ছে
-        res.json({ success: true, message: "OTP তৈরি হয়েছে!", username: user.username, serverOtp: otp });
-
-    } catch (err) { res.status(500).json({ error: "সার্ভারে সমস্যা!" }); }
+        res.json({
+            success: true,
+            token,
+            username: user.username,
+            profilePic: user.profilePic,
+            coins: user.coins || 0,
+            mobile: user.mobile || "",
+            message: "লগিন সফল!"
+        });
+    } catch (err) {
+        res.status(500).json({ error: "লগিন সমস্যা" });
+    }
 });
 
 // --- ৪. লগিন ভেরিফাই (OTP চেক করে টোকেন দেওয়া) ---
