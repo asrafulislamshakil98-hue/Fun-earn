@@ -1,3 +1,4 @@
+require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer');
@@ -6,27 +7,48 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 const { Server } = require("socket.io");
+const nodemailer = require('nodemailer'); 
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// সিক্রেট কি (আপনার .env ফাইলে থাকলে process.env.SECRET_KEY ব্যবহার করবেন)
+// সিক্রেট কি
 const SECRET_KEY = process.env.SECRET_KEY || "mysecretkey123"; 
 
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
 
-// MongoDB কানেকশন
-const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/socialApp';
-mongoose.connect(mongoURI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log(err));
+// ==================================================
+// 👇 ডাটাবেস কানেকশন (সঠিক নিয়ম: একবারই কানেক্ট হবে)
+// ==================================================
 
-// ==========================================
-// স্কিমা ডিজাইন (Schema Design)
-// ==========================================
+const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/socialApp';
+
+// ডিবাগিং: কনসোলে চেক করা যে লিংকটি ঠিকমতো লোড হয়েছে কিনা
+if (!mongoURI) {
+    console.error("❌ Fatal Error: MONGO_URI is missing in Environment Variables!");
+} else {
+    // পাসওয়ার্ড লুকিয়ে প্রিন্ট করা (সিকিউরিটির জন্য)
+    const hiddenURI = mongoURI.replace(/:([^:@]+)@/, ':****@');
+    console.log(`✅ MONGO_URI found: ${hiddenURI}`);
+    console.log("🔄 Connecting to MongoDB...");
+}
+
+// কানেকশন ফাংশন
+mongoose.connect(mongoURI, {
+    serverSelectionTimeoutMS: 5000 // ৫ সেকেন্ড চেষ্টা করবে
+})
+.then(() => console.log("✅ MongoDB Connected Successfully!"))
+.catch(err => {
+    console.error("❌ MongoDB Connection Error:", err.message);
+    // যদি অথেনটিকেশন এরর হয়, তবে বিস্তারিত দেখাবে
+    if (err.message.includes('auth')) {
+        console.error("💡 টিপস: আপনার ইউজারনেম বা পাসওয়ার্ড ভুল হতে পারে। Render Environment চেক করুন।");
+    }
+});
+
 
 // ১. ইউজার স্কিমা (OTP বাদ দেওয়া হয়েছে)
 const UserSchema = new mongoose.Schema({
