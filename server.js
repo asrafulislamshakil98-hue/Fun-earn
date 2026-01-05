@@ -123,14 +123,27 @@ const ReportSchema = new mongoose.Schema({
 });
 const Report = mongoose.model('Report', ReportSchema);
 
-// --- ফাইল আপলোড কনফিগারেশন ---
-const storage = multer.diskStorage({
-    destination: './public/uploads/',
-    filename: function(req, file, cb){
-        const fixedName = file.originalname.replace(/\s+/g, '_'); 
-        cb(null, Date.now() + '_' + fixedName);
-    }
+// --- নতুন ফাইল আপলোড কনফিগারেশন (Cloudinary) ---
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+// ১. Cloudinary কনফিগার করা
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.CLOUD_API_KEY,
+    api_secret: process.env.CLOUD_API_SECRET
 });
+
+// ২. স্টোরেজ সেটআপ (অটোমেটিক ক্লাউডে আপলোড হবে)
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'fun-earn-uploads', // ক্লাউডিনারি ফোল্ডারের নাম
+        allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'webm'], // কি কি ফাইল নেওয়া হবে
+        resource_type: 'auto' // ছবি বা ভিডিও অটো ডিটেক্ট করবে
+    },
+});
+
 const upload = multer({ storage: storage });
 
 // ==========================================
@@ -237,24 +250,33 @@ app.post('/login', async (req, res) => {
 // অন্যান্য API Routes
 // ==========================================
 
-// ৩. পোস্ট আপলোড
+// --- ৩. পোস্ট আপলোড রাউট (Cloudinary আপডেটেড) ---
 app.post('/upload', upload.single('mediaFile'), async (req, res) => {
     try {
         const { username, isShort, caption, location, privacy } = req.body;
         const isShortBoolean = isShort === 'true' || isShort === true || isShort === 'on';
 
-        if (!req.file && !caption) return res.status(400).json({ error: "ফাইল অথবা ক্যাপশন দিন।" });
+        if (!req.file && !caption) {
+            return res.status(400).json({ error: "ফাইল অথবা ক্যাপশন দিন।" });
+        }
 
-        const mediaUrl = req.file ? `/uploads/${req.file.filename}` : '';
+        // 👇 Cloudinary সরাসরি ফাইলের পূর্ণ লিংক (path) দেয়
+        const mediaUrl = req.file ? req.file.path : '';
         const fileType = req.file ? (req.file.mimetype.startsWith('video') ? 'video' : 'image') : '';
         
         const newPost = new Post({
-            username, mediaType: fileType, mediaUrl, isShort: isShortBoolean,
-            caption: caption || "", location: location || "", privacy: privacy || "public"
+            username,
+            mediaType: fileType,
+            mediaUrl: mediaUrl, // সরাসরি ক্লাউড লিংক
+            isShort: isShortBoolean,
+            caption: caption || '',
+            location: location || '',
+            privacy: privacy || 'public'
         });
 
         await newPost.save();
 
+        // নোটিফিকেশন
         const notifMsg = isShortBoolean ? 'একটি রিলস' : 'একটি নতুন পোস্ট';
         if (typeof io !== 'undefined') {
             io.emit('new_notification', {
@@ -262,10 +284,37 @@ app.post('/upload', upload.single('mediaFile'), async (req, res) => {
                 message: `${username} ${notifMsg} আপলোড করেছেন।`, postId: newPost._id
             });
         }
+        
         res.json({ success: true, message: "Upload Successful", post: newPost });
-    } catch (err) { res.status(500).json({ error: "আপলোড সমস্যা" }); }
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: "আপলোড সমস্যা" });
+    }
 });
 
+// প্রোফাইল আপডেটের রাউটও একই ভাবে req.file.path ব্যবহার করবে
+app.post('/update-profile-data', upload.fields([{ name: 'profilePic' }, { name: 'coverPic' }]), async (req, res) => {
+    try {
+        const { username, bio } = req.body;
+        let updateData = {};
+        if (bio) updateData.bio = bio;
+
+        // 👇 Cloudinary লিংক ব্যবহার
+        if (req.files['profilePic']) {
+            updateData.profilePic = req.files['profilePic'][0].path;
+        }
+        if (req.files['coverPic']) {
+            updateData.coverPic = req.files['coverPic'][0].path;
+        }
+
+        const user = await User.findOneAndUpdate({ username }, { $set: updateData }, { new: true });
+        
+        res.json({ 
+            success: true, message: "আপডেট হয়েছে!", 
+            profilePic: user.profilePic, coverPic: user.coverPic, bio: user.bio 
+        });
+    } catch (err) { res.status(500).json({ error: "সমস্যা হয়েছে" }); }
+});
 // ৪. চ্যাট ফাইল আপলোড
 app.post('/chat-upload', upload.single('chatFile'), (req, res) => {
     if (req.file) {
