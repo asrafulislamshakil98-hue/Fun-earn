@@ -123,28 +123,6 @@ const ReportSchema = new mongoose.Schema({
 });
 const Report = mongoose.model('Report', ReportSchema);
 
-// --- নতুন ফাইল আপলোড কনফিগারেশন (Cloudinary) ---
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
-// ১. Cloudinary কনফিগার করা
-cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME,
-    api_key: process.env.CLOUD_API_KEY,
-    api_secret: process.env.CLOUD_API_SECRET
-});
-
-// ২. স্টোরেজ সেটআপ (অটোমেটিক ক্লাউডে আপলোড হবে)
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'fun-earn-uploads', // ক্লাউডিনারি ফোল্ডারের নাম
-        allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'webm'], // কি কি ফাইল নেওয়া হবে
-        resource_type: 'auto' // ছবি বা ভিডিও অটো ডিটেক্ট করবে
-    },
-});
-
-const upload = multer({ storage: storage });
 
 // ==========================================
 // Socket.io (রিয়েল-টাইম ফিচার)
@@ -249,8 +227,31 @@ app.post('/login', async (req, res) => {
 // ==========================================
 // অন্যান্য API Routes
 // ==========================================
+// --- নতুন ফাইল আপলোড কনফিগারেশন (Cloudinary) ---
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// --- ৩. পোস্ট আপলোড রাউট (Cloudinary আপডেটেড) ---
+// ১. Cloudinary কনফিগার করা
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.CLOUD_API_KEY,
+    api_secret: process.env.CLOUD_API_SECRET
+});
+
+// ২. স্টোরেজ সেটআপ
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'fun-earn-uploads',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'webm'], 
+        resource_type: 'auto'
+    },
+});
+
+const upload = multer({ storage: storage });
+
+
+// --- ৩. পোস্ট আপলোড রাউট (সঠিক) ---
 app.post('/upload', upload.single('mediaFile'), async (req, res) => {
     try {
         const { username, isShort, caption, location, privacy } = req.body;
@@ -260,14 +261,14 @@ app.post('/upload', upload.single('mediaFile'), async (req, res) => {
             return res.status(400).json({ error: "ফাইল অথবা ক্যাপশন দিন।" });
         }
 
-        // 👇 Cloudinary সরাসরি ফাইলের পূর্ণ লিংক (path) দেয়
+        // 👇 Cloudinary লিংক (path) ব্যবহার করা হয়েছে
         const mediaUrl = req.file ? req.file.path : '';
         const fileType = req.file ? (req.file.mimetype.startsWith('video') ? 'video' : 'image') : '';
         
         const newPost = new Post({
             username,
             mediaType: fileType,
-            mediaUrl: mediaUrl, // সরাসরি ক্লাউড লিংক
+            mediaUrl: mediaUrl, 
             isShort: isShortBoolean,
             caption: caption || '',
             location: location || '',
@@ -276,7 +277,6 @@ app.post('/upload', upload.single('mediaFile'), async (req, res) => {
 
         await newPost.save();
 
-        // নোটিফিকেশন
         const notifMsg = isShortBoolean ? 'একটি রিলস' : 'একটি নতুন পোস্ট';
         if (typeof io !== 'undefined') {
             io.emit('new_notification', {
@@ -287,21 +287,21 @@ app.post('/upload', upload.single('mediaFile'), async (req, res) => {
         
         res.json({ success: true, message: "Upload Successful", post: newPost });
     } catch (err) {
-        console.error("Upload Error Details:", JSON.stringify(err, null, 2)); 
-        console.error("Message:", err.message);
-    
+        console.error("Upload Error:", err);
         res.status(500).json({ error: "আপলোড সমস্যা: " + err.message });
     }
 });
 
-// প্রোফাইল আপডেটের রাউটও একই ভাবে req.file.path ব্যবহার করবে
+
+// --- ৪. প্রোফাইল আপডেট রাউট (ফটো + কভার + বায়ো) ---
+// (আগের ডুপ্লিকেট সরিয়ে একটাই সঠিক রাখা হয়েছে)
 app.post('/update-profile-data', upload.fields([{ name: 'profilePic' }, { name: 'coverPic' }]), async (req, res) => {
     try {
         const { username, bio } = req.body;
         let updateData = {};
         if (bio) updateData.bio = bio;
 
-        // 👇 Cloudinary লিংক ব্যবহার
+        // 👇 Cloudinary লিংক (path) ব্যবহার করা হয়েছে
         if (req.files['profilePic']) {
             updateData.profilePic = req.files['profilePic'][0].path;
         }
@@ -316,34 +316,25 @@ app.post('/update-profile-data', upload.fields([{ name: 'profilePic' }, { name: 
             profilePic: user.profilePic, coverPic: user.coverPic, bio: user.bio 
         });
     } catch (err) { 
-        console.error("Upload Error Details:", JSON.stringify(err, null, 2)); 
-        console.error("Message:", err.message);
-    
+        console.error("Profile Update Error:", err);
         res.status(500).json({ error: "আপলোড সমস্যা: " + err.message });
     }
 });
-// ৪. চ্যাট ফাইল আপলোড
+
+
+// --- ৫. চ্যাট ফাইল আপলোড রাউট (সঠিক) ---
 app.post('/chat-upload', upload.single('chatFile'), (req, res) => {
     if (req.file) {
         const fileType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
-        res.json({ success: true, mediaUrl: `/uploads/${req.file.filename}`, mediaType: fileType });
+        
+        res.json({ 
+            success: true, 
+            mediaUrl: req.file.path, // 👇 সঠিক Cloudinary লিংক
+            mediaType: fileType 
+        });
     } else {
         res.status(400).json({ error: "ফাইল আপলোড হয়নি" });
     }
-});
-
-// ৫. প্রোফাইল আপডেট (ফটো + কভার + বায়ো)
-app.post('/update-profile-data', upload.fields([{ name: 'profilePic' }, { name: 'coverPic' }]), async (req, res) => {
-    try {
-        const { username, bio } = req.body;
-        let updateData = {};
-        if (bio) updateData.bio = bio;
-        if (req.files['profilePic']) updateData.profilePic = `/uploads/${req.files['profilePic'][0].filename}`;
-        if (req.files['coverPic']) updateData.coverPic = `/uploads/${req.files['coverPic'][0].filename}`;
-
-        const user = await User.findOneAndUpdate({ username }, { $set: updateData }, { new: true });
-        res.json({ success: true, message: "প্রোফাইল আপডেট হয়েছে!", profilePic: user.profilePic, coverPic: user.coverPic, bio: user.bio });
-    } catch (err) { res.status(500).json({ error: "সমস্যা" }); }
 });
 
 // ৬. ফলো/কানেক্ট
