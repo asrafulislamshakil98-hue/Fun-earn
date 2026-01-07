@@ -541,9 +541,73 @@ app.post('/delete-my-account', async (req, res) => {
     res.json({ success: true, message: "একাউন্ট ডিলিট হয়েছে" });
 });
 
-// ১৫. প্রাইভেসি পলিসি
+// --- Privacy Policy Route (গুগল প্লে স্টোরের জন্য) ---
 app.get('/privacy-policy', (req, res) => {
-    res.send(`<h1>Privacy Policy</h1><p>We respect your privacy. Contact us at support@funearn.com</p>`);
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Privacy Policy - Fun-Earn</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background: #f4f4f9; color: #333; }
+            .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #1877f2; }
+            h2 { color: #444; margin-top: 20px; }
+            p { margin-bottom: 15px; }
+            ul { margin-bottom: 15px; }
+            li { margin-bottom: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Privacy Policy for Fun-Earn</h1>
+            <p><strong>Effective Date:</strong> 2025-01-01</p>
+           
+            <p>Welcome to Fun-Earn. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our app.</p>
+
+
+            <h2>1. Information We Collect</h2>
+            <p>We may collect, use, store and transfer different kinds of personal data about you which we have grouped together follows:</p>
+            <ul>
+                <li><strong>Identity Data:</strong> Username, Profile Picture.</li>
+                <li><strong>Contact Data:</strong> Email address or Phone number (for login/verification).</li>
+                <li><strong>Media Data:</strong> Photos and Videos you upload.</li>
+            </ul>
+
+
+            <h2>2. How We Use Your Information</h2>
+            <ul>
+                <li>To register you as a new customer.</li>
+                <li>To manage our relationship with you.</li>
+                <li>To enable you to partake in a prize draw, competition or complete a survey.</li>
+            </ul>
+
+
+            <h2>3. Permissions We Request</h2>
+            <p>To provide specific features, we may request the following permissions:</p>
+            <ul>
+                <li><strong>Camera:</strong> To take photos/videos for uploading posts or live streaming.</li>
+                <li><strong>Location:</strong> To add location tags to your posts (Optional).</li>
+                <li><strong>Storage:</strong> To upload photos/videos from your gallery.</li>
+            </ul>
+
+
+            <h2>4. Data Security</h2>
+            <p>We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way.</p>
+
+
+            <h2>5. Contact Us</h2>
+            <p>If you have any questions about this privacy policy, please contact us at: <strong>support@funearn.com</strong></p>
+           
+            <hr>
+            <p style="text-align:center; font-size:12px; color:gray;">&copy; 2025 Fun-Earn App. All rights reserved.</p>
+        </div>
+    </body>
+    </html>
+    `;
+    res.send(htmlContent);
 });
 
 // হোম পেজ রুট
