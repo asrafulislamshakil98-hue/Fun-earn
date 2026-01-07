@@ -287,8 +287,10 @@ app.post('/upload', upload.single('mediaFile'), async (req, res) => {
         
         res.json({ success: true, message: "Upload Successful", post: newPost });
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ error: "আপলোড সমস্যা" });
+        console.error("Upload Error Details:", JSON.stringify(err, null, 2)); 
+        console.error("Message:", err.message);
+    
+        res.status(500).json({ error: "আপলোড সমস্যা: " + err.message });
     }
 });
 
@@ -313,7 +315,12 @@ app.post('/update-profile-data', upload.fields([{ name: 'profilePic' }, { name: 
             success: true, message: "আপডেট হয়েছে!", 
             profilePic: user.profilePic, coverPic: user.coverPic, bio: user.bio 
         });
-    } catch (err) { res.status(500).json({ error: "সমস্যা হয়েছে" }); }
+    } catch (err) { 
+        console.error("Upload Error Details:", JSON.stringify(err, null, 2)); 
+        console.error("Message:", err.message);
+    
+        res.status(500).json({ error: "আপলোড সমস্যা: " + err.message });
+    }
 });
 // ৪. চ্যাট ফাইল আপলোড
 app.post('/chat-upload', upload.single('chatFile'), (req, res) => {
