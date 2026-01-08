@@ -1893,11 +1893,41 @@ async function quickPhoneConnect() {
     }
 }
 function toggleMessenger() { document.getElementById('messenger-dropdown').style.display = 'block'; }
-async function toggleSettingsMenu() { 
-    const menu = document.getElementById('settings-dropdown');
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-}
+// --- সেটিংস মেনু টগল ফাংশন (ফিক্সড) ---
+async function toggleSettingsMenu() {
+    // ১. মেনু খোলার ফাংশন (হিস্ট্রি সহ)
+    openMenuWithBack('settings-dropdown');
 
+    // ২. নাম এবং ছবি সেট করা
+    const menuImg = document.getElementById('menu-user-img');
+    const menuName = document.getElementById('menu-user-name');
+    
+    // ডাটা আনা
+    const storedName = currentUser || localStorage.getItem('username');
+    let storedPic = localStorage.getItem('profilePic');
+
+    // যদি ছবি না থাকে, ডিফল্ট ছবি বসবে
+    if (!storedPic || storedPic === "undefined" || storedPic === "") {
+        storedPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+    }
+
+    // HTML এ বসানো
+    if (menuImg) menuImg.src = storedPic;
+    if (menuName) menuName.innerText = storedName;
+
+    // ৩. সার্ভার থেকে কয়েন ব্যালেন্স আনা (লাইভ আপডেট)
+    try {
+        const res = await fetch(`/my-balance/${currentUser}`);
+        const data = await res.json();
+        
+        const balanceSpan = document.getElementById('user-coin-balance');
+        if(balanceSpan) {
+            balanceSpan.innerText = data.coins;
+        }
+    } catch (err) {
+        console.log("ব্যালেন্স লোড সমস্যা:", err);
+    }
+}
 // --- Socket Listeners (Notification & Chat) ---
 socket.on('new_notification', (data) => {
     if (data.receiver === currentUser || data.receiver === 'all') {
