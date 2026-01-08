@@ -534,14 +534,24 @@ app.post('/change-password', async (req, res) => {
     res.json({ success: true, message: "পাসওয়ার্ড আপডেট হয়েছে" });
 });
 
+// --- একাউন্ট ডিলিট রাউট ---
 app.post('/delete-my-account', async (req, res) => {
-    const { username } = req.body;
-    await User.findOneAndDelete({ username });
-    await Post.deleteMany({ username });
-    res.json({ success: true, message: "একাউন্ট ডিলিট হয়েছে" });
+    try {
+        const { username } = req.body;
+       
+        // ১. ইউজার ডিলিট
+        await User.findOneAndDelete({ username });
+        // ২. ইউজারের সব পোস্ট ডিলিট
+        await Post.deleteMany({ username });
+        // ৩. নোটিফিকেশন ডিলিট
+        await Notification.deleteMany({ $or: [{ sender: username }, { receiver: username }] });
+
+
+        res.json({ success: true, message: "একাউন্ট সফলভাবে ডিলিট হয়েছে!" });
+    } catch (err) { res.status(500).json({ error: "সমস্যা হয়েছে" }); }
 });
 
-// --- Privacy Policy Route (গুগল প্লে স্টোরের জন্য) ---
+// 15--- Privacy Policy Route (গুগল প্লে স্টোরের জন্য) ---
 app.get('/privacy-policy', (req, res) => {
     const htmlContent = `
     <!DOCTYPE html>
