@@ -25,10 +25,6 @@ button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px; f
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: sticky; top: 0; z-index: 1000;
 }
-.logo { color: #1877f2; cursor: pointer; }
-.search-box {
-    background: #f0f2f5; padding: 8px 15px; border-radius: 20px; display: flex; align-items: center;
-}
 .search-box input { border: none; background: transparent; outline: none; margin-left: 10px; }
 .nav-right { display: flex; align-items: center; gap: 15px; }
 #nav-profile-img { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; object-fit: cover; }
@@ -70,13 +66,6 @@ button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px; f
     margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;
 }
 
-/* মোবাইল রেসপন্সিভ */
-@media (max-width: 768px) {
-    .main-container { flex-direction: column; }
-    .left-sidebar, .right-sidebar, .feed-section { width: 100%; }
-    .left-sidebar { order: -1; } /* প্রোফাইল সবার উপরে থাকবে */
-    .search-box { display: none; } /* মোবাইলে সার্চ লুকানো */
-}
 
 /* --- style.css এর শেষে যোগ করুন --- */
 
@@ -124,13 +113,6 @@ button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px; f
     background: white; width: 300px; padding: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     border-radius: 8px; z-index: 2000;
-}
-
-/* রেসপন্সিভ (মোবাইলে ট্যাব ছোট হবে) */
-@media (max-width: 768px) {
-    .nav-tab { padding: 10px 15px; font-size: 20px; }
-    .nav-left .search-box { display: none; } /* মোবাইলে সার্চ বার লুকানো */
-    .nav-left .logo { display: block; }
 }
 
 /* ফ্রেন্ডস ভিউ স্টাইল */
@@ -1164,17 +1146,6 @@ div[title="Shorts"] {
     white-space: nowrap;   /* লেখা ভেঙে নিচে নামবে না */
 }
 
-/* মোবাইলে নাম লুকানো (জায়গা বাঁচানোর জন্য) */
-@media (max-width: 768px) {
-    .app-name {
-        display: none; 
-    }
-    
-    /* মোবাইলে সার্চ বার যেনো ফুল সাইজ পায় */
-    .search-box {
-        width: 100%;
-    }
-}
 
 /* --- ফুল স্ক্রিন শর্টস ডিজাইন --- */
 .shorts-right-actions {
@@ -1790,85 +1761,60 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
     color: black;
 }
 
-/* --- মোবাইল ফিক্স (Final Force) --- */
+/* =========================================
+   মোবাইল রেসপন্সিভ ডিজাইন (FIXED)
+========================================= */
 
-/* ১. ন্যাভবার লেআউট */
-.navbar {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 0 10px !important;
-    height: 60px !important;
-    background: white !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-/* ২. ডান পাশের আইকনগুলো (চ্যাপ্টা হওয়া বন্ধ করা) */
-.nav-icon-btn {
-    width: 35px !important;
-    height: 35px !important;
-    min-width: 35px !important; /* সংকুচিত হবে না */
-    border-radius: 50% !important; /* গোল হবেই */
-    flex-shrink: 0 !important;    /* জায়গা কমলেও ছোট হবে না */
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    margin-left: 5px !important;
-    background-color: #e4e6eb;
-}
-
-/* ৩. ডান পাশের কন্টেইনার */
-.nav-right {
-    display: flex !important;
-    align-items: center !important;
-    flex-shrink: 0 !important; /* এটি ফিক্সড থাকবে */
-}
-
-/* ৪. মোবাইল ভিউ (Mobile View) */
 @media (max-width: 768px) {
-    
-    /* নাম লুকানো */
-    .app-name {
+
+    /* ১. মেইন কন্টেইনার (ফিড নিচে নিচে আসবে) */
+    .main-container {
+        flex-direction: column;
+        padding: 0;
+    }
+
+    /* ২. সাইডবার (মোবাইলে বাম ও ডান পাশের সাইডবার লুকানো থাকবে) */
+    .left-sidebar, .right-sidebar {
         display: none !important;
     }
-
-    /* বাম পাশ (লোগো + সার্চ) */
-    .nav-left {
-        flex: 1 !important; /* বাকি সব জায়গা নেবে */
-        display: flex !important;
-        align-items: center !important;
-        overflow: hidden; /* ওভারফ্লো আটকাবে */
-    }
-
-    /* লোগো সাইজ */
-    .app-logo {
-        height: 35px !important;
-        width: 35px !important;
-        min-width: 35px !important;
-        margin-right: 8px !important;
-    }
-
-    /* সার্চ বক্স (লোগোর পাশে দেখাবে) */
-    .search-box {
-        display: flex !important;
-        align-items: center !important;
+    
+    .feed-section {
         width: 100% !important;
-        height: 35px !important;
-        background: #f0f2f5 !important;
-        border-radius: 10px !important;
-        padding: 0 10px !important;
+        margin: 0;
+    }
+
+    /* ৩. ন্যাভবার ফিক্স (নাম লুকানো, সার্চ বার দেখানো) */
+    .app-name {
+        display: none !important; /* নাম লুকানো */
+    }
+
+    /* ৪. সার্চ বার (লোগোর পাশে ছোট করে দেখাবে) */
+    .search-box {
+        display: flex !important; /* আগে none ছিল, এখন flex */
+        width: 100% !important;
+        height: 35px;
+        padding: 0 10px;
+        margin-left: 5px;
+        background: #f0f2f5;
+        border-radius: 20px;
     }
 
     .search-box input {
-        width: 100% !important;
-        background: transparent !important;
-        border: none !important;
-        font-size: 13px !important;
+        width: 100%;
+        font-size: 13px;
+        background: transparent;
+        border: none;
+    }
+    
+    .nav-left .search-box {
+        display: flex !important; /* জোর করে দেখানো */
     }
 
-    /* মাঝখানের ফাঁকা ডিভ লুকানো */
-    .nav-center {
-        display: none !important;
+    /* ৫. আইকনগুলো গোল রাখা */
+    .nav-icon-btn {
+        width: 35px !important;
+        height: 35px !important;
+        border-radius: 50% !important;
+        margin-left: 2px !important;
     }
 }
