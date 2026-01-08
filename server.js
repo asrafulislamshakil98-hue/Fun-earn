@@ -63,7 +63,8 @@ const UserSchema = new mongoose.Schema({
     coins: { type: Number, default: 50 }, // সাইন আপ বোনাস
     following: [{ type: String }],
     followers: [{ type: String }],
-    blockedUsers: [{ type: String }]
+    blockedUsers: [{ type: String }],
+    mutedUsers: [{ type: String }], 
 });
 const User = mongoose.model('User', UserSchema);
 
@@ -677,6 +678,36 @@ app.delete('/delete-chat/:user1/:user2', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: "সমস্যা হয়েছে" });
     }
+});
+
+app.post('/mute-user', async (req, res) => {
+    try {
+        const { username, targetUser } = req.body;
+        const user = await User.findOne({ username });
+        
+        if (!user.mutedUsers) user.mutedUsers = [];
+
+        if (!user.mutedUsers.includes(targetUser)) {
+            user.mutedUsers.push(targetUser);
+            await user.save();
+            res.json({ success: true, message: `${targetUser}-এর নোটিফিকেশন মিউট করা হয়েছে।`, status: 'muted' });
+        } else {
+            res.json({ success: false, message: "ইতিমধ্যে মিউট করা আছে।" });
+        }
+    } catch (err) { res.status(500).json({ error: "সমস্যা হয়েছে" }); }
+});
+
+app.post('/unmute-user', async (req, res) => {
+    try {
+        const { username, targetUser } = req.body;
+        const user = await User.findOne({ username });
+
+        if (user.mutedUsers) {
+            user.mutedUsers = user.mutedUsers.filter(u => u !== targetUser);
+            await user.save();
+            res.json({ success: true, message: `${targetUser}-কে আন-মিউট করা হয়েছে।`, status: 'unmuted' });
+        }
+    } catch (err) { res.status(500).json({ error: "সমস্যা হয়েছে" }); }
 });
 
 // হোম পেজ রুট

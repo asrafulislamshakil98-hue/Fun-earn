@@ -3661,16 +3661,51 @@ async function unblockUser(targetUser) {
     }
 }
 
-// ================= চ্যাট সেটিংস ফিচার =================
+// ================= চ্যাট সেটিংস ফিচার (সম্পূর্ণ আপডেটেড) =================
 
-// ১. মেনু ওপেন/ক্লোজ
-function toggleChatSettings() {
+// ১. মেনু টগল (ডাইনামিক - ব্লক/মিউট স্ট্যাটাস চেক করে)
+async function toggleChatSettings() {
     const menu = document.getElementById('chat-settings-menu');
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    
+    // মেনু যদি বন্ধ থাকে, তবে খোলার আগে ডাটা চেক করব
+    if (menu.style.display === 'none' || menu.style.display === '') {
+        try {
+            // ইউজারের বর্তমান ডাটা আনা (ব্লক/মিউট লিস্ট দেখার জন্য)
+            const res = await fetch('/users');
+            const allUsers = await res.json();
+            const me = allUsers.find(u => u.username === currentUser);
+
+            // স্ট্যাটাস চেক করা
+            const isBlocked = me.blockedUsers && me.blockedUsers.includes(currentChatFriend);
+            const isMuted = me.mutedUsers && me.mutedUsers.includes(currentChatFriend);
+
+            // মেনুর HTML আপডেট করা (Theme, Delete, Mute, Block সব একসাথে)
+            menu.innerHTML = `
+                <div onclick="changeChatTheme()">🎨 Change Theme</div>
+                <div onclick="deleteChatHistory()">🗑️ Delete Chat</div>
+                
+                <!-- ডাইনামিক মিউট বাটন -->
+                <div onclick="toggleMuteStatus('${isMuted}')">
+                    ${isMuted ? '🔊 Unmute Notifications' : '🔕 Mute Notifications'}
+                </div>
+
+                <!-- ডাইনামিক ব্লক বাটন -->
+                <div onclick="toggleBlockStatus('${isBlocked}')" style="color: red;">
+                    ${isBlocked ? '✅ Unblock User' : '🚫 Block User'}
+                </div>
+            `;
+
+            menu.style.display = 'block';
+        } catch (err) {
+            console.log("সেটিংস লোড সমস্যা", err);
+        }
+    } else {
+        menu.style.display = 'none';
+    }
 }
 
 // ২. চ্যাট থিম পরিবর্তন (রঙ বদলানো)
-const chatColors = ['#1877f2', '#e91e63', '#00b894', '#6c5ce7', '#e17055']; // নীল, গোলাপি, সবুজ, বেগুনি, কমলা
+const chatColors = ['#1877f2', '#e91e63', '#00b894', '#6c5ce7', '#e17055'];
 let colorIndex = 0;
 
 function changeChatTheme() {
@@ -3686,7 +3721,6 @@ function changeChatTheme() {
         msg.style.background = newColor;
     });
 
-    // মেনু বন্ধ করা
     document.getElementById('chat-settings-menu').style.display = 'none';
 }
 
@@ -3710,16 +3744,55 @@ async function deleteChatHistory() {
     document.getElementById('chat-settings-menu').style.display = 'none';
 }
 
-// ৪. মিউট নোটিফিকেশন (ডেমো)
-function muteChat() {
-    alert(`${currentChatFriend}-এর নোটিফিকেশন মিউট করা হয়েছে।`);
-    document.getElementById('chat-settings-menu').style.display = 'none';
+// ৪. মিউট/আন-মিউট টগল ফাংশন (Real Server)
+async function toggleMuteStatus(isMuted) {
+    const currentStatus = (isMuted === 'true'); 
+    const url = currentStatus ? '/unmute-user' : '/mute-user';
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser, targetUser: currentChatFriend })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            alert(data.message);
+            document.getElementById('chat-settings-menu').style.display = 'none';
+        }
+    } catch (err) {
+        alert("সার্ভার সমস্যা!");
+    }
 }
 
-// ৫. ব্লক ইউজার
-function blockChatUser() {
-    if(currentChatFriend) {
-        blockUser(currentChatFriend); // আমাদের আগের ব্লক ফাংশন কল করা হলো
-        closeChat(); // চ্যাট বন্ধ
+// ৫. ব্লক/আন-ব্লক টগল ফাংশন (Real Server)
+async function toggleBlockStatus(isBlocked) {
+    const currentStatus = (isBlocked === 'true');
+    const url = currentStatus ? '/unblock-user' : '/block-user';
+    const actionText = currentStatus ? "আনব্লক" : "ব্লক";
+
+    if(!confirm(`আপনি কি নিশ্চিত ${currentChatFriend}-কে ${actionText} করতে চান?`)) return;
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser, blockedUser: currentChatFriend })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            document.getElementById('chat-settings-menu').style.display = 'none';
+            
+            // যদি ব্লক করা হয়, তবে চ্যাট বন্ধ করে দেওয়া ভালো
+            if(!currentStatus) {
+                closeChat();
+                if(typeof loadPosts === 'function') loadPosts(); 
+            }
+        }
+    } catch (err) {
+        alert("সার্ভার সমস্যা!");
     }
 }
