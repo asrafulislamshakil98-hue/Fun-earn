@@ -1,6 +1,5 @@
 // ==========================================
-// ==========================================
-// ১. ভেরিয়েবল এবং ইনিশিয়ালাইজেশন
+// ১. ভেরিয়েবল এবং ইনিশিয়ালাইজেশন (সংশোধিত)
 // ==========================================
 const socket = io();
 let currentUser = null;
@@ -10,10 +9,11 @@ let currentChatFriend = null;
 // পেজ লোড হলে চেক করা
 if (token) {
     currentUser = localStorage.getItem('username');
-    // পেজ লোড হওয়ার সাথে সাথে অ্যাপ দেখাবে
-    window.onload = function() {
-        showApp();
-    };
+    
+    // 👇 এই অংশটি আপডেট করা হয়েছে
+    document.addEventListener('DOMContentLoaded', () => {
+        showApp(); // অ্যাপ দেখাবে
+    });
 }
 
 // ================= অথেনটিকেশন (সরাসরি - OTP ছাড়া) =================
@@ -147,23 +147,31 @@ function showApp() {
     document.getElementById('auth-section').style.display = 'none';
     document.getElementById('app-section').style.display = 'block';
     
-    // সব জায়গায় ছবি এবং নাম আপডেট করা
-    const storedPic = localStorage.getItem('profilePic') || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-    
+    // ১. নাম এবং ছবি সেট করা
+    const storedPic = localStorage.getItem('profilePic');
+    const defaultPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+    const finalPic = storedPic || defaultPic;
+
     const imagesToUpdate = ['bottom-profile-img', 'menu-user-img', 'dashboard-pic', 'modal-user-pic'];
     imagesToUpdate.forEach(id => {
         const img = document.getElementById(id);
-        if (img) img.src = storedPic;
+        if (img) img.src = finalPic;
     });
 
     const menuName = document.getElementById('menu-user-name');
     if(menuName) menuName.innerText = currentUser;
     const modalName = document.getElementById('modal-user-name');
     if(modalName) modalName.innerText = currentUser;
-    updateNavBalance();
 
-    // ডিফল্ট হোম পেজ লোড
-    loadPosts();
+    // ২. 👇 কয়েন ব্যালেন্স আপডেট করা (এটি যোগ করা হয়েছে)
+    if (typeof updateNavBalance === 'function') {
+        updateNavBalance(); 
+    }
+
+    // ৩. 👇 পোস্ট লোড করা (এটি যোগ করা হয়েছে)
+    if (typeof loadPosts === 'function') {
+        loadPosts(); 
+    }
 }
 
 // নিচের বারের ট্যাব কালার হ্যান্ডেলিং
