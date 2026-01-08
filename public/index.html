@@ -62,9 +62,9 @@
             <h2 class="app-name" onclick="location.reload()">Fun-Earn</h2>
         
             <!-- সার্চ বক্স -->
-            <div class="search-box">
-                <i class="fas fa-search" onclick="handleSearch({key: 'Enter'})"></i>
-                <input type="text" id="searchInput" placeholder="খুঁজুন..." onkeypress="handleSearch(event)">
+             <div class="search-box" id="mobileSearchBox" onclick="toggleMobileSearch()">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search..." onkeypress="handleSearch(event)">
             </div>
         </div>
 

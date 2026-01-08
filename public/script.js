@@ -3549,3 +3549,29 @@ async function blockUser(userToBlock) {
         alert("সার্ভার সমস্যা।");
     }
 }
+// --- মোবাইল সার্চ বার টগল (Open/Close) ---
+function toggleMobileSearch() {
+    const box = document.getElementById('mobileSearchBox');
+    const input = document.getElementById('searchInput');
+
+    // শুধুমাত্র মোবাইলে কাজ করবে (স্ক্রিন সাইজ চেক)
+    if (window.innerWidth <= 768) {
+        box.classList.toggle('active'); // ক্লাস যোগ/বিয়োগ করবে
+        
+        // যদি ওপেন হয়, ইনপুটে ফোকাস করবে
+        if (box.classList.contains('active')) {
+            input.focus();
+        }
+    }
+}
+
+// সার্চ বারের বাইরে ক্লিক করলে বন্ধ হয়ে যাবে
+document.addEventListener('click', function(event) {
+    const box = document.getElementById('mobileSearchBox');
+    const isClickInside = box.contains(event.target);
+    
+    // যদি বাইরে ক্লিক হয় এবং বক্স খোলা থাকে
+    if (!isClickInside && box.classList.contains('active')) {
+        box.classList.remove('active');
+    }
+});

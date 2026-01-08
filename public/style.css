@@ -1887,3 +1887,52 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
         color: #1877f2 !important;
     }
 }
+
+/* --- মোবাইল সার্চ বার ফিক্স (গোল এবং ফোল্ডেবল) --- */
+@media (max-width: 768px) {
+    
+    .search-box {
+        width: 40px !important;        /* গোল সাইজ */
+        height: 40px !important;
+        border-radius: 50% !important; /* পুরোপুরি গোল */
+        padding: 0 !important;
+        justify-content: center !important;
+        cursor: pointer;
+        transition: width 0.3s ease;   /* এনিমেশন */
+        position: relative;
+        z-index: 2000;
+        background: #e4e6eb !important; /* আইকনের মতো কালার */
+    }
+
+    /* শুরুতে ইনপুট বক্স লুকানো থাকবে */
+    .search-box input {
+        display: none !important;
+    }
+
+    .search-box i {
+        margin: 0 !important;
+        font-size: 18px !important;
+        color: #050505 !important;
+    }
+
+    /* --- যখন সার্চ বারে ক্লিক করা হবে (Active Mode) --- */
+    .search-box.active {
+        width: 250px !important;       /* তখন লম্বা হবে */
+        border-radius: 20px !important;
+        padding: 0 10px !important;
+        justify-content: flex-start !important;
+        background: white !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        position: absolute;            /* অন্যদের উপরে ভাসবে */
+        left: 50px;                    /* লোগোর পরে */
+    }
+
+    .search-box.active input {
+        display: block !important;     /* ইনপুট দেখা যাবে */
+        width: 100% !important;
+    }
+    
+    .search-box.active i {
+        margin-right: 10px !important;
+    }
+}
