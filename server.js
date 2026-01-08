@@ -511,6 +511,46 @@ app.post('/block-user', async (req, res) => {
     }
 });
 
+// 12--- আনব্লক করার রাউট ---
+app.post('/unblock-user', async (req, res) => {
+    try {
+        const { username, blockedUser } = req.body;
+        const user = await User.findOne({ username });
+
+        if (user && user.blockedUsers) {
+            // ব্লক লিস্ট থেকে রিমুভ করা
+            user.blockedUsers = user.blockedUsers.filter(u => u !== blockedUser);
+            await user.save();
+            res.json({ success: true, message: `${blockedUser}-কে আনব্লক করা হয়েছে।` });
+        } else {
+            res.json({ success: false, message: "সমস্যা হয়েছে" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: "সার্ভার সমস্যা" });
+    }
+});
+
+// 12--- ব্লক লিস্ট দেখার রাউট ---
+app.post('/get-blocked-users', async (req, res) => {
+    try {
+        const { username } = req.body;
+        const user = await User.findOne({ username });
+
+        if (!user || !user.blockedUsers || user.blockedUsers.length === 0) {
+            return res.json([]);
+        }
+
+        // ব্লক করা ইউজারদের ডিটেলস (ছবি সহ) খুঁজে বের করা
+        const blockedProfiles = await User.find({
+            username: { $in: user.blockedUsers }
+        }, 'username profilePic');
+
+        res.json(blockedProfiles);
+    } catch (err) {
+        res.status(500).json({ error: "ডাটা আনা যায়নি" });
+    }
+});
+
 // ১৩. চ্যাট ও গ্লোবাল সার্চ
 app.get('/messages/:user1/:user2', async (req, res) => {
     const messages = await Message.find({ $or: [ { sender: req.params.user1, receiver: req.params.user2 }, { sender: req.params.user2, receiver: req.params.user1 } ] }).sort({ createdAt: 1 });

@@ -3583,3 +3583,80 @@ document.addEventListener('click', function(event) {
         box.classList.remove('active');
     }
 });
+
+// ================= ব্লক লিস্ট ম্যানেজমেন্ট =================
+
+// ১. মোডাল ওপেন এবং লিস্ট লোড করা
+async function openBlockedListModal() {
+    // সেটিংস মেনু বন্ধ করা
+    document.getElementById('settings-dropdown').style.display = 'none';
+    
+    const modal = document.getElementById('blocked-list-modal');
+    const container = document.getElementById('blocked-users-container');
+    
+    modal.style.display = 'flex';
+    container.innerHTML = '<div style="text-align:center; padding:20px;">🔄 লোডিং...</div>';
+
+    try {
+        const res = await fetch('/get-blocked-users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser })
+        });
+        
+        const blockedUsers = await res.json();
+
+        if (blockedUsers.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:gray;">কাউকে ব্লক করা হয়নি।</div>';
+            return;
+        }
+
+        let html = '';
+        blockedUsers.forEach(user => {
+            const pic = user.profilePic || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            
+            html += `
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:10px; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${pic}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                        <span style="font-weight:bold;">${user.username}</span>
+                    </div>
+                    <button onclick="unblockUser('${user.username}')" class="btn-secondary" style="border:1px solid red; color:red; font-size:12px; padding:5px 10px;">
+                        Unblock
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+    } catch (err) {
+        console.log(err);
+        container.innerHTML = '<p style="color:red; text-align:center;">সমস্যা হয়েছে!</p>';
+    }
+}
+
+// ২. আনব্লক ফাংশন
+async function unblockUser(targetUser) {
+    if(!confirm(`আপনি কি ${targetUser}-কে আনব্লক করতে চান?`)) return;
+
+    try {
+        const res = await fetch('/unblock-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser, blockedUser: targetUser })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+            alert(data.message);
+            openBlockedListModal(); // লিস্ট রিফ্রেশ
+            loadPosts(); // ফিড রিফ্রেশ (যাতে আনব্লক করা ইউজারের পোস্ট আবার আসে)
+        } else {
+            alert("ব্যর্থ!");
+        }
+    } catch (err) {
+        alert("সার্ভার সমস্যা");
+    }
+}

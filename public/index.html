@@ -181,6 +181,11 @@
             <span id="txt_settings">Settings & Privacy</span>
         </div>
 
+        <div class="menu-item" onclick="openBlockedListModal()">
+            <div class="icon-circle"><i class="fas fa-user-slash" style="color: red;"></i></div>
+            <span>Blocked Users</span>
+        </div>
+
         <hr>
         <div class="menu-item" onclick="logout()">
             <div class="icon-circle"><i class="fas fa-sign-out-alt"></i></div><span>Log Out</span>
@@ -695,6 +700,23 @@
                 <p style="color:gray; font-size:12px;">Last updated: 2025</p>
             </div>
             <button onclick="document.getElementById('terms-modal').style.display='none'" class="btn-primary" style="width:100%; margin-top:20px;">I Agree</button>
+        </div>
+    </div>
+
+    <!-- ব্লক লিস্ট মোডাল -->
+    <div id="blocked-list-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="width: 400px; max-height: 80vh; overflow-y: auto;">
+        
+            <!-- হেডার -->
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:10px;">
+                <h3 style="margin:0; color:red;">🚫 Blocked Users</h3>
+                <span onclick="document.getElementById('blocked-list-modal').style.display='none'" style="cursor:pointer; font-size:24px;">&times;</span>
+            </div>
+
+            <!-- লিস্ট কন্টেইনার -->
+            <div id="blocked-users-container">
+                <p style="text-align:center;">লোডিং...</p>
+            </div>
         </div>
     </div>
 
