@@ -619,6 +619,22 @@ function playNotificationSound() {
     audio.play().catch(e => console.log(e));
 }
 
+// ৪. নোটিফিকেশন টগল (ব্যাজ ক্লিয়ার সহ)
+function toggleNotifications() {
+    const box = document.getElementById('notification-box');
+    
+    // যদি এখন খুলতে যাই
+    if (box.style.display === 'none' || box.style.display === '') {
+        // ব্যাজ বা লাল বাতি নেভানো
+        const badge = document.querySelector('.nav-icon-btn .notification-badge');
+        if(badge) {
+            badge.innerText = '0';
+            badge.style.display = 'none';
+        }
+    }
+    
+    openMenuWithBack('notification-box');
+}
 
 // ==========================================
 // ৫. শর্টস (Shorts/Reels)
@@ -803,7 +819,6 @@ async function openFullShorts(postId) {
         // মোডাল ওপেন
         modal.style.display = 'block';
          video.play().catch(e => console.log("Autoplay blocked"));
-
          window.history.pushState({shortsOpen: true}, null, "");
 
     // 👇 নতুন: রিওয়ার্ড ফাংশন কল করা
@@ -1603,6 +1618,76 @@ function closeGlobalSearch() {
     document.getElementById('searchInput').value = '';
 }
 
+// ==========================================
+// 📝 পোস্ট মোডাল এবং ফাইল প্রিভিউ (ফাইনাল)
+// ==========================================
+
+// ১. পোস্ট মোডাল ওপেন করা
+function openPostModal() {
+    // অন্য সব মেনু বা মোডাল বন্ধ করা (যদি খোলা থাকে)
+    if (typeof closeAllMenusAndModals === 'function') {
+        closeAllMenusAndModals(false); 
+    }
+    
+    const modal = document.getElementById('post-modal');
+    modal.style.display = 'flex';
+    
+    // ইউজারের নাম ও ছবি আপডেট করা (যাতে সবসময় লেটেস্ট দেখায়)
+    const storedPic = localStorage.getItem('profilePic') || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+    
+    const modalName = document.getElementById('modal-user-name');
+    const modalPic = document.getElementById('modal-user-pic');
+    
+    if (modalName) modalName.innerText = currentUser;
+    if (modalPic) modalPic.src = storedPic;
+
+    // মোবাইলের ব্যাক বাটনের জন্য হিস্ট্রি যোগ করা
+    window.history.pushState({modal: true}, null, "");
+}
+
+// ২. পোস্ট মোডাল বন্ধ করা
+function closePostModal() {
+    document.getElementById('post-modal').style.display = 'none';
+    
+    // ভিডিও বা প্রিভিউ ক্লিয়ার করা (যাতে পরের বার ফ্রেশ থাকে)
+    const previewBox = document.getElementById('file-preview');
+    if(previewBox) {
+        previewBox.innerHTML = `
+            <div style="background:#f0f2f5; padding:20px; border-radius:8px;">
+                <i class="fas fa-images" style="font-size:24px;"></i>
+                <p>ফাইল যোগ করুন</p>
+            </div>`;
+    }
+    document.getElementById('fileInput').value = ""; // ইনপুট রিসেট
+
+    // ম্যানুয়ালি বন্ধ করলে হিস্ট্রি ব্যাক করা
+    if(window.history.state && window.history.state.modal) {
+        window.history.back();
+    }
+}
+
+// ৩. ফাইল প্রিভিউ (ছবি/ভিডিও সিলেক্ট করলে দেখাবে)
+function previewFile() {
+    const fileInput = dmocuent.getElementById('fileInput');
+    const file = fileInput ? fileInput.files[0] : null;
+    const previewBox = document.getElementById('file-preview');
+    
+    if (file && previewBox) {
+        const url = URL.createObjectURL(file);
+        
+        // ফাইল টাইপ চেক করে প্রিভিউ দেখানো
+        if (file.type.startsWith('image')) {
+            previewBox.innerHTML = `<img src="${url}" style="width:100%; max-height:250px; object-fit:contain; border-radius:8px;">`;
+        } else if (file.type.startsWith('video')) {
+            previewBox.innerHTML = `<video src="${url}" controls style="width:100%; max-height:250px; border-radius:8px;"></video>`;
+        }
+    }
+}
+
+// ১. আপলোড মেনু
+function toggleUploadMenu() {
+    openMenuWithBack('upload-dropdown');
+}
 function selectUploadType(type) { 
     /* ... আগের কোড ... */
  }
@@ -1861,6 +1946,10 @@ async function quickPhoneConnect() {
     } finally {
         btn.innerHTML = originalIcon; // বাটন আগের অবস্থায়
     }
+}
+// ২. মেসেঞ্জার মেনু
+function toggleMessenger() {
+    openMenuWithBack('messenger-dropdown');
 }
 
 // --- Socket Listeners (Notification & Chat) ---
@@ -3616,73 +3705,9 @@ function closeAllMenusAndModals(goBack = true) {
     // যদি সত্যি সত্যি ব্যাক বাটন চাপা না হয় (ম্যানুয়ালি কল করা হয়)
     // তবে আমরা হিস্ট্রি ঠিক রাখার জন্য কোড দিয়ে ব্যাক করব না।
 }
-
-// ==========================================
-// 🔙 মোবাইল ব্যাক বাটন ও মেনু হ্যান্ডেলিং
-// ==========================================
-
-// ১. ব্যাক বাটন চাপলে সব মেনু বন্ধ হবে
-window.onpopstate = function(event) {
-    closeAllMenusAndModals(false); // false মানে নতুন করে ব্যাক করবে না
-};
-
-// ২. যেকোনো মেনু খোলার স্মার্ট ফাংশন (হিস্ট্রি সহ)
-function openMenuWithBack(menuId) {
-    const menu = document.getElementById(menuId);
-    
-    // যদি অলরেডি খোলা থাকে, তবে বন্ধ করো
-    if (menu.style.display === 'block' || menu.style.display === 'flex') {
-        menu.style.display = 'none';
-        // যদি হিস্ট্রিতে মেনুর রেকর্ড থাকে, তবে ব্যাক করো
-        if(window.history.state && window.history.state.menuOpen) {
-            window.history.back();
-        }
-        return;
-    }
-
-    // অন্য সব মেনু বন্ধ করো
-    closeAllMenusAndModals(false);
-
-    // মেনু খোলা
-    menu.style.display = 'block';
-    
-    // ব্রাউজার হিস্ট্রিতে রেকর্ড যোগ করা (যাতে ব্যাক বাটন কাজ করে)
-    window.history.pushState({menuOpen: true}, null, "");
-}
-
-// ৩. সব মেনু বন্ধ করার ফাংশন
-function closeAllMenusAndModals(goBack = true) {
-    const ids = [
-        'upload-dropdown', 'settings-dropdown', 'notification-box', 
-        'messenger-dropdown', 'post-modal', 'full-shorts-modal',
-        'profile-modal', 'edit-profile-modal', 'camera-stream-modal',
-        'shorts-comment-modal', 'global-search-results'
-    ];
-
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-
-    // ভিডিও বা ক্যামেরা বন্ধ করা
-    const video = document.getElementById('full-short-video');
-    if(video) video.pause();
-    
-    if(typeof closeCameraMode === 'function') closeCameraMode();
-}
-
-// ==========================================
-// 🔘 টগল বাটন ফাংশনসমূহ (Clean Version)
-// ==========================================
-
-// ১. আপলোড মেনু
-function toggleUploadMenu() {
-    openMenuWithBack('upload-dropdown');
-}
-
-// ২. মেসেঞ্জার মেনু
-function toggleMessenger() {
-    openMenuWithBack('messenger-dropdown');
+// ২. সেটিংস মেনু
+function toggleSettingsMenu() {
+    openMenuWithBack('settings-dropdown');
 }
 
 // ৩. সেটিংস মেনু (ডাটা লোড সহ)
@@ -3698,66 +3723,4 @@ async function toggleSettingsMenu() {
 
     // ব্যালেন্স আপডেট
     if (typeof updateMyBalanceUI === 'function') updateMyBalanceUI();
-}
-
-// ৪. নোটিফিকেশন টগল (ব্যাজ ক্লিয়ার সহ)
-function toggleNotifications() {
-    const box = document.getElementById('notification-box');
-    
-    // যদি এখন খুলতে যাই
-    if (box.style.display === 'none' || box.style.display === '') {
-        // ব্যাজ বা লাল বাতি নেভানো
-        const badge = document.querySelector('.nav-icon-btn .notification-badge');
-        if(badge) {
-            badge.innerText = '0';
-            badge.style.display = 'none';
-        }
-    }
-    
-    openMenuWithBack('notification-box');
-}
-
-// ==========================================
-// 📝 পোস্ট মোডাল এবং ফাইল প্রিভিউ
-// ==========================================
-
-// ৫. পোস্ট মোডাল ওপেন
-function openPostModal() {
-    closeAllMenusAndModals(false); // অন্য সব বন্ধ
-    
-    const modal = document.getElementById('post-modal');
-    modal.style.display = 'flex';
-    
-    // ইউজারের তথ্য সেট করা
-    document.getElementById('modal-user-name').innerText = currentUser;
-    document.getElementById('modal-user-pic').src = localStorage.getItem('profilePic') || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-
-    // ব্যাক বাটনের জন্য হিস্ট্রি যোগ
-    window.history.pushState({modal: true}, null, "");
-}
-
-// ৬. পোস্ট মোডাল ক্লোজ
-function closePostModal() {
-    document.getElementById('post-modal').style.display = 'none';
-    
-    // ম্যানুয়ালি ক্লোজ করলে হিস্ট্রি ব্যাক করা
-    if(window.history.state && window.history.state.modal) {
-        window.history.back();
-    }
-}
-
-// ৭. ফাইল প্রিভিউ (ছবি/ভিডিও)
-function previewFile() {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput ? fileInput.files[0] : null;
-    const previewBox = document.getElementById('file-preview');
-    
-    if (file && previewBox) {
-        const url = URL.createObjectURL(file);
-        if (file.type.startsWith('image')) {
-            previewBox.innerHTML = `<img src="${url}" style="width:100%; max-height:200px; object-fit:contain; border-radius:8px;">`;
-        } else {
-            previewBox.innerHTML = `<video src="${url}" controls style="width:100%; max-height:200px; border-radius:8px;"></video>`;
-        }
-    }
 }
