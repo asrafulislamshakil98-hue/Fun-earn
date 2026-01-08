@@ -1818,3 +1818,58 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
         margin-left: 2px !important;
     }
 }
+
+/* --- মোবাইল সার্চ বার ফিক্স --- */
+
+@media (max-width: 768px) {
+    
+    /* ১. বাম পাশের এরিয়া ফিক্স করা */
+    .nav-left {
+        flex: 1 !important;        /* এটি পুরো বাম পাশের খালি জায়গা নেবে */
+        display: flex !important;
+        align-items: center !important;
+        max-width: 65% !important; /* স্ক্রিনের ৬৫% জায়গা নেবে */
+        margin-right: 5px;
+    }
+
+    /* ২. অ্যাপের নাম লুকানো (জায়গা বাঁচানোর জন্য) */
+    .app-name {
+        display: none !important;
+    }
+
+    /* ৩. সার্চ বার জোর করে দেখানো */
+    .search-box {
+        display: flex !important;   /* অবশ্যই দেখাবে */
+        align-items: center !important;
+        width: 100% !important;     /* nav-left এর বাকি সব জায়গা নেবে */
+        height: 35px !important;    /* ফিক্সড উচ্চতা */
+        background: #f0f2f5 !important;
+        border-radius: 20px !important;
+        padding: 0 10px !important;
+        margin-left: 5px !important; /* লোগো থেকে একটু দূরে */
+        opacity: 1 !important;      /* দৃশ্যমান হবে */
+        visibility: visible !important;
+    }
+
+    /* ৪. ইনপুট ফিল্ড এবং আইকন */
+    .search-box input {
+        width: 100% !important;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        font-size: 13px !important;
+        color: #000 !important;     /* কালো লেখা */
+    }
+
+    .search-box i {
+        font-size: 12px !important;
+        color: gray !important;
+        margin-right: 5px !important;
+    }
+
+    /* ৫. ডান পাশের আইকনগুলো একটু চাপিয়ে দেওয়া */
+    .nav-right {
+        max-width: 35% !important; /* বাকি ৩৫% জায়গা নেবে */
+        justify-content: flex-end !important;
+    }
+}
