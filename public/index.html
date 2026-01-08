@@ -52,60 +52,51 @@
 
     </div>
 </div>
-    <!-- =========================================
-       ২. মেইন অ্যাপ সেকশন (লগিন করার পর)
-    ========================================== -->
-    <div id="app-section" style="display:none;">
+    <nav class="navbar">
+    
+        <!-- ১. বাম পাশ: লোগো + নাম + সার্চ -->
+        <div class="nav-left">
+            <img src="uploads/logoapp.png" class="app-logo" onclick="location.reload()" title="Home">
         
-        <!-- টপ নেভিগেশন বার -->
-        <nav class="navbar">
-            
-            <!-- বাম পাশ: লোগো ও নাম -->
-            <div class="nav-left">
-                <img src="uploads/logoapp.png" class="app-logo" onclick="location.reload()" title="Home">
-                <h2 class="app-name" onclick="location.reload()" style="font-size: 20px; font-weight: bold; color: #1877f2; cursor: pointer; margin-right: 15px;">Fun-Earn</h2>
-                
-                <!-- সার্চ বার -->
-                <div class="search-box">
-                    <i class="fas fa-search" onclick="handleSearch({key: 'Enter'})" style="cursor: pointer;"></i>
-                    <input type="text" id="searchInput" placeholder="ভিডিও, গান বা মানুষ খুঁজুন..." onkeypress="handleSearch(event)">
-                </div>
+            <!-- ল্যাপটপের জন্য নাম (মোবাইলে লুকানো থাকবে) -->
+            <h2 class="app-name" onclick="location.reload()">Fun-Earn</h2>
+        
+            <!-- সার্চ বক্স -->
+            <div class="search-box">
+                <i class="fas fa-search" onclick="handleSearch({key: 'Enter'})"></i>
+                <input type="text" id="searchInput" placeholder="খুঁজুন..." onkeypress="handleSearch(event)">
+            </div>
+        </div>
+
+        <!-- ২. মাঝখান (ফাঁকা) -->
+        <div class="nav-center"></div>
+
+        <!-- ৩. ডান পাশ: বাটনগুলো -->
+        <div class="nav-right">
+        
+            <!-- Upload -->
+            <div class="nav-icon-btn plus-btn" onclick="toggleUploadMenu()">
+                <i class="fas fa-plus"></i>
             </div>
 
-            <!-- মাঝখান (ফাঁকা রাখা হয়েছে ডিজাইনের জন্য) -->
-            <div class="nav-center"></div>
-
-            <!-- ডান পাশ: অ্যাকশন বাটনসমূহ -->
-            <div class="nav-right">
-                 <!-- 👇 ১. নতুন: লাইভ কয়েন বক্স -->
-                <div class="coin-display-box" title="My Coins">
-                    <i class="fas fa-coins coin-icon"></i>
-                    <span id="nav-coin-balance">0</span>
-                 </div>
-                <!-- Upload Button (+) -->
-                <div class="nav-icon-btn plus-btn" onclick="toggleUploadMenu()" title="Create" style="background: #e7f3ff; color: #1877f2;">
-                    <i class="fas fa-plus"></i>
-                </div>
-
-                <!-- Messenger Icon -->
-                <div class="nav-icon-btn" onclick="toggleMessenger()" title="Messages">
-                    <img src="uploads/message.png" class="custom-nav-icon" alt="Msg" style="width: 24px; height: 24px;">
-                </div>
-
-                <!-- Notification Icon -->
-                <div class="nav-icon-btn" onclick="toggleNotifications()" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" style="display:none;">0</span>
-                </div>
-
-                <!-- Menu / Settings Icon -->
-                <div class="nav-icon-btn" onclick="toggleSettingsMenu()" title="Menu">
-                    <i class="fas fa-th"></i>
-                </div>
-
+            <!-- Messenger -->
+            <div class="nav-icon-btn" onclick="toggleMessenger()">
+                <img src="uploads/message.png" class="custom-nav-icon" alt="Msg">
             </div>
-        </nav>
 
+            <!-- Notification -->
+            <div class="nav-icon-btn" onclick="toggleNotifications()">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" style="display:none;">0</span>
+            </div>
+
+            <!-- Menu -->
+            <div class="nav-icon-btn" onclick="toggleSettingsMenu()">
+                <i class="fas fa-th"></i>
+            </div>
+
+        </div>
+    </nav>
         <!-- মেইন কন্টেন্ট কন্টেইনার -->
         <div class="main-container" style="justify-content: center;">
             
