@@ -1936,3 +1936,39 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
         margin-right: 10px !important;
     }
 }
+
+/* --- মোবাইল রেসপন্সিভ ড্রপডাউন মেনু (সব মেনুর জন্য) --- */
+
+@media (max-width: 768px) {
+    
+    /* ১. আপলোড, সেটিংস, নোটিফিকেশন এবং মেসেঞ্জার বক্স */
+    #upload-dropdown, 
+    #settings-dropdown, 
+    #notification-box, 
+    #messenger-dropdown {
+        width: 94% !important;        /* স্ক্রিনের ৯৪% জায়গা নেবে */
+        left: 3% !important;          /* বাম পাশ থেকে ৩% দূরে */
+        right: 3% !important;         /* ডান পাশ থেকে ৩% দূরে */
+        top: 65px !important;         /* ন্যাভবারের ঠিক নিচে */
+        border-radius: 15px !important;
+        
+        /* বক্স যাতে বেশি লম্বা হয়ে স্ক্রিন না কাটে */
+        max-height: 80vh !important;  
+        overflow-y: auto !important;  /* বেশি কন্টেন্ট হলে স্ক্রল হবে */
+        
+        /* ছায়া এবং বর্ডার */
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2) !important;
+        border: 1px solid #eee !important;
+    }
+
+    /* ২. মেসেঞ্জার সার্চ বক্স ফিক্স */
+    .glass-search-box, .chat-search-bar-container {
+        width: 100% !important;
+    }
+    
+    /* ৩. সেটিংস মেনুর আইটেমগুলো বড় করা (টাচ করার সুবিধার জন্য) */
+    .menu-item, .upload-item, .notif-item, .chat-list-item {
+        padding: 12px 15px !important; /* একটু মোটা হবে */
+        font-size: 15px !important;    /* লেখাও একটু বড় হবে */
+    }
+}
