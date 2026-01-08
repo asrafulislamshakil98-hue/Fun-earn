@@ -1856,7 +1856,7 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
         width: 100% !important;
         height: 35px !important;
         background: #f0f2f5 !important;
-        border-radius: 20px !important;
+        border-radius: 10px !important;
         padding: 0 10px !important;
     }
 
