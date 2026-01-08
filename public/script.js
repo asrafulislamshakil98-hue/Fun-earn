@@ -3660,3 +3660,66 @@ async function unblockUser(targetUser) {
         alert("সার্ভার সমস্যা");
     }
 }
+
+// ================= চ্যাট সেটিংস ফিচার =================
+
+// ১. মেনু ওপেন/ক্লোজ
+function toggleChatSettings() {
+    const menu = document.getElementById('chat-settings-menu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+// ২. চ্যাট থিম পরিবর্তন (রঙ বদলানো)
+const chatColors = ['#1877f2', '#e91e63', '#00b894', '#6c5ce7', '#e17055']; // নীল, গোলাপি, সবুজ, বেগুনি, কমলা
+let colorIndex = 0;
+
+function changeChatTheme() {
+    colorIndex = (colorIndex + 1) % chatColors.length;
+    const newColor = chatColors[colorIndex];
+    
+    // হেডারের কালার বদলানো
+    document.querySelector('.glass-chat-header').style.background = newColor;
+    
+    // নিজের মেসেজের কালার বদলানো
+    const myMsgs = document.querySelectorAll('.my-msg');
+    myMsgs.forEach(msg => {
+        msg.style.background = newColor;
+    });
+
+    // মেনু বন্ধ করা
+    document.getElementById('chat-settings-menu').style.display = 'none';
+}
+
+// ৩. চ্যাট ডিলিট করা
+async function deleteChatHistory() {
+    if(!confirm("আপনি কি নিশ্চিত সব মেসেজ মুছে ফেলতে চান?")) return;
+
+    try {
+        const res = await fetch(`/delete-chat/${currentUser}/${currentChatFriend}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+
+        if(data.success) {
+            document.getElementById('chat-messages').innerHTML = ''; // স্ক্রিন ক্লিয়ার
+            alert(data.message);
+        }
+    } catch(err) {
+        alert("সমস্যা হয়েছে!");
+    }
+    document.getElementById('chat-settings-menu').style.display = 'none';
+}
+
+// ৪. মিউট নোটিফিকেশন (ডেমো)
+function muteChat() {
+    alert(`${currentChatFriend}-এর নোটিফিকেশন মিউট করা হয়েছে।`);
+    document.getElementById('chat-settings-menu').style.display = 'none';
+}
+
+// ৫. ব্লক ইউজার
+function blockChatUser() {
+    if(currentChatFriend) {
+        blockUser(currentChatFriend); // আমাদের আগের ব্লক ফাংশন কল করা হলো
+        closeChat(); // চ্যাট বন্ধ
+    }
+}

@@ -1972,3 +1972,74 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
         font-size: 15px !important;    /* লেখাও একটু বড় হবে */
     }
 }
+
+/* --- চ্যাট বক্স হেডার ফিক্স --- */
+
+/* ১. হেডারের লেআউট ঠিক করা */
+.glass-chat-header {
+    display: flex !important;
+    justify-content: space-between !important; /* দুই পাশে ঠেলে দেবে */
+    align-items: center !important; /* লম্বালম্বি মাঝখানে রাখবে */
+    padding: 10px 15px !important;
+}
+
+/* ২. ডান পাশের বাটনগুলোর গ্রুপ ঠিক করা */
+.chat-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important; /* বাটনগুলোর মাঝে ফাঁকা */
+}
+
+/* ৩. সব বাটনের সাইজ এবং পজিশন ফিক্স করা */
+.chat-actions button {
+    width: 35px !important;
+    height: 35px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    margin: 0 !important; /* বাটন নিচে নামার কারণ হতে পারে মার্জিন, তাই ০ করা হলো */
+}
+
+/* ৪. ক্লোজ বাটনের স্পেশাল স্টাইল */
+.chat-actions button:last-child {
+    background: red !important;
+    color: white !important;
+    font-size: 16px !important;
+}
+
+/* --- চ্যাট সেটিংস মেনু ডিজাইন --- */
+.chat-settings-dropdown {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 160px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    overflow: hidden;
+    z-index: 100;
+    text-align: left;
+    animation: fadeIn 0.2s;
+}
+
+.chat-settings-dropdown div {
+    padding: 10px 15px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f2f5;
+    transition: 0.2s;
+    font-weight: 500;
+}
+
+.chat-settings-dropdown div:hover {
+    background: #f0f2f5;
+    color: #1877f2;
+}
+
+.chat-settings-dropdown div:last-child {
+    border-bottom: none;
+}

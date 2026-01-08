@@ -181,11 +181,6 @@
             <span id="txt_settings">Settings & Privacy</span>
         </div>
 
-        <div class="menu-item" onclick="openBlockedListModal()">
-            <div class="icon-circle"><i class="fas fa-user-slash" style="color: red;"></i></div>
-            <span>Blocked Users</span>
-        </div>
-
         <hr>
         <div class="menu-item" onclick="logout()">
             <div class="icon-circle"><i class="fas fa-sign-out-alt"></i></div><span>Log Out</span>
@@ -238,6 +233,20 @@
             <div class="chat-actions">
                 <button onclick="startCall('audio')"><i class="fas fa-phone-alt"></i></button>
                 <button onclick="startCall('video')"><i class="fas fa-video"></i></button>
+                <div style="position: relative; display: inline-block;">
+                    <button onclick="toggleChatSettings()" title="Settings" style="background: rgba(255,255,255,0.3);">
+                    <i class="fas fa-cog"></i>
+                    </button>
+
+                    <!-- সেটিংস ড্রপডাউন মেনু -->
+                    <div id="chat-settings-menu" class="chat-settings-dropdown" style="display: none;">
+                        <div onclick="changeChatTheme()">🎨 Change Theme</div>
+                        <div onclick="deleteChatHistory()">🗑️ Delete Chat</div>
+                        <div onclick="muteChat()">Hz Mute Notifications</div>
+                        <div onclick="blockChatUser()" style="color: red;">🚫 Block User</div>
+                    </div>
+                </div>
+
                 <button onclick="closeChat()" style="background:red; color:white;"><i class="fas fa-times"></i></button>
             </div>
         </div>
@@ -513,6 +522,11 @@
                     <input type="password" id="oldPass" placeholder="Old Password">
                     <input type="password" id="newPass" placeholder="New Password">
                     <button onclick="changePassword()" class="btn-primary" style="width:100%; margin-top:5px;">Update Password</button>
+                </div>
+
+                <div class="menu-item" onclick="openBlockedListModal()">
+                    <div class="icon-circle"><i class="fas fa-user-slash" style="color: red;"></i></div>
+                    <span>Blocked Users</span>
                 </div>
 
                 <!-- ২. ডার্ক মোড -->

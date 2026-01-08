@@ -660,6 +660,25 @@ app.get('/privacy-policy', (req, res) => {
     res.send(htmlContent);
 });
 
+// --- ১৩. চ্যাট ডিলিট করার রাউট ---
+app.delete('/delete-chat/:user1/:user2', async (req, res) => {
+    try {
+        const { user1, user2 } = req.params;
+        
+        // দুইজনের মধ্যকার সব মেসেজ ডিলিট করা
+        await Message.deleteMany({
+            $or: [
+                { sender: user1, receiver: user2 },
+                { sender: user2, receiver: user1 }
+            ]
+        });
+
+        res.json({ success: true, message: "চ্যাট হিস্ট্রি মুছে ফেলা হয়েছে!" });
+    } catch (err) {
+        res.status(500).json({ error: "সমস্যা হয়েছে" });
+    }
+});
+
 // হোম পেজ রুট
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'index.html')); });
 
