@@ -210,6 +210,7 @@ app.post('/login', async (req, res) => {
         if (!isMatch) return res.json({ success: false, message: "ভুল পাসওয়ার্ড!" });
 
         const token = jwt.sign({ userId: user._id, username: user.username }, SECRET_KEY);
+        console.log("Logged in user pic:", user.profilePic); 
 
         res.json({
             success: true,
