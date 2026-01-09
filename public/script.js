@@ -120,10 +120,14 @@ async function login() {
         });
         const data = await res.json();
 
-        if (data.success) {
+       if (data.token) {
+            // ১. টোকেন ও নাম সেভ
             localStorage.setItem('token', data.token);
             localStorage.setItem('username', data.username);
-            localStorage.setItem('profilePic', data.profilePic || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png");
+            
+            // ২. ছবি সেভ (যদি না থাকে তবে ডিফল্ট)
+            const pic = data.profilePic || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            localStorage.setItem('profilePic', pic);
 
             currentUser = data.username;
             showApp();
@@ -143,28 +147,27 @@ async function login() {
 // ৩. মেইন অ্যাপ কন্ট্রোল এবং নেভিগেশন
 // ==========================================
 
-// --- অ্যাপ ওপেন করার মেইন ফাংশন (সংশোধিত) ---
+// --- script.js এর showApp ফাংশন (সম্পূর্ণ ফিক্সড) ---
 function showApp() {
-    // ১. স্ক্রিন পরিবর্তন
     document.getElementById('auth-section').style.display = 'none';
     document.getElementById('app-section').style.display = 'block';
     
-    // ২. ডিফল্ট ছবি এবং স্টোরেজ থেকে ছবি নেওয়া
+    // ১. লোকাল স্টোরেজ থেকে ছবি নেওয়া
     const defaultPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
     let storedPic = localStorage.getItem('profilePic');
     
-    // যদি ছবি না থাকে বা 'undefined' হয়, ডিফল্ট ব্যবহার করবে
+    // যদি ছবি না থাকে
     if (!storedPic || storedPic === "undefined" || storedPic === "") {
         storedPic = defaultPic;
     }
 
-    // ৩. সব জায়গায় ছবি বসানো (Broken Image Fix সহ)
+    // ২. সব জায়গায় ছবি বসানো (মেনু, বটম বার, ড্যাশবোর্ড)
     const imagesToUpdate = [
-        'nav-profile-img',      // উপরের কোণায় (যদি থাকে)
-        'bottom-profile-img',   // নিচের বারে
-        'menu-user-img',        // সেটিংস মেনুতে
-        'dashboard-pic',        // পোস্ট বক্সে
-        'modal-user-pic'        // পোস্ট মোডালে
+        'bottom-profile-img',  // নিচের বারের ছবি
+        'menu-user-img',       // মেনুর ছবি
+        'dashboard-pic',       // পোস্ট করার বক্সের ছবি
+        'modal-user-pic',      // পোস্ট মোডালের ছবি
+        'nav-profile-img'      // উপরের বারের ছবি (যদি থাকে)
     ];
 
     imagesToUpdate.forEach(id => {
@@ -172,25 +175,22 @@ function showApp() {
         if (img) {
             img.src = storedPic;
             
-            // 👇 এই লাইনটি ম্যাজিক করবে: ছবি ভাঙা হলে ডিফল্ট ছবি বসবে
+            // ছবি ভাঙলে ডিফল্ট দেখাবে
             img.onerror = function() { 
                 this.src = defaultPic; 
-                this.onerror = null; // লুপ আটকাতে
+                this.onerror = null;
             };
         }
     });
 
-    // ৪. সব জায়গায় নাম আপডেট করা
-    const navName = document.getElementById('nav-username');
-    if(navName) navName.innerText = currentUser;
-
+    // ৩. নাম আপডেট করা
     const menuName = document.getElementById('menu-user-name');
     if(menuName) menuName.innerText = currentUser;
     
     const modalName = document.getElementById('modal-user-name');
     if(modalName) modalName.innerText = currentUser;
 
-    // ৫. পোস্ট এবং ব্যালেন্স লোড করা
+    // ৪. পোস্ট এবং ব্যালেন্স লোড
     if (typeof loadPosts === 'function') loadPosts();
     if (typeof updateNavBalance === 'function') updateNavBalance();
 }
@@ -390,7 +390,7 @@ function createPostElement(post, feed, isFollowing) {
             <img src="${userPic}" 
                  class="post-avatar" 
                  onclick="viewUserProfile('${post.username}')" 
-                 onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'"
+                 onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
                  style="width:40px; height:40px; border-radius:50%; cursor:pointer; object-fit:cover; border:1px solid #ddd;">
             
             <div style="flex:1;">
