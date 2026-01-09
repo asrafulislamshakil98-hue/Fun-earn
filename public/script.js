@@ -289,94 +289,44 @@ async function filterVideos() {
     }
 }
 
-// --- পোস্ট তৈরি করার মেইন ফাংশন (সব ফিচার + ফিক্সড) ---
+// --- পোস্ট তৈরি ফাংশন (আপডেটেড: ইনলাইন কমেন্ট নেই) ---
 function createPostElement(post, feed, isFollowing) {
-    // ১. প্রাইভেসি চেক (Only Me হলে এবং আমি মালিক না হলে দেখাবে না)
     if (post.privacy === 'private' && post.username !== currentUser) return;
 
-    // ২. মিডিয়া টাইপ (ভিডিও নাকি ছবি)
+    // মিডিয়া
     let mediaContent = '';
     if (post.mediaType === 'video') {
-        mediaContent = `<video controls src="${post.mediaUrl}" 
-                          onplay="claimWatchReward('${post._id}')" 
-                          style="width:100%; margin-top:10px; border-radius:8px; background:black; max-height:500px;">
-                        </video>`;
+        mediaContent = `<video controls src="${post.mediaUrl}" onplay="claimWatchReward('${post._id}')" style="width:100%; margin-top:10px; border-radius:8px; background:black; max-height:500px;"></video>`;
     } else if (post.mediaUrl) {
         mediaContent = `<img src="${post.mediaUrl}" style="width:100%; margin-top:10px; object-fit:cover; border-radius:8px;">`;
     }
 
-    // ৩. ক্যাপশন, লোকেশন এবং প্রাইভেসি লজিক
-    let captionHTML = (post.caption && post.caption !== 'undefined') 
-        ? `<p style="font-size:15px; margin:8px 0; color:#050505; white-space: pre-wrap;">${post.caption}</p>` 
-        : '';
+    // ইনফো
+    let captionHTML = post.caption ? `<p style="font-size:15px; margin:8px 0; white-space: pre-wrap;">${post.caption}</p>` : '';
+    let locationHTML = post.location ? ` is at <b style="color:#1877f2;">${post.location}</b>` : '';
+    let privacyIcon = post.privacy === 'private' ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-globe-americas"></i>';
+    const userPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
 
-    let locationHTML = (post.location && post.location !== 'undefined') 
-        ? ` is at <b style="color:#1877f2;">${post.location}</b>` 
-        : '';
-
-    let privacyIcon = '<i class="fas fa-globe-americas" title="Public"></i>';
-    if (post.privacy === 'private') {
-        privacyIcon = '<i class="fas fa-lock" title="Only Me"></i>';
-    }
-
-    // ৪. ইউজার ছবি
-    const userPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"; 
-
-    // ৫. ফলো বাটন লজিক (কার্ডের ভেতরে)
+    // ফলো বাটন
     let followBtnHtml = '';
     if (post.username !== currentUser) {
         if (isFollowing) {
             followBtnHtml = `<span class="following-text follow-btn-${post.username}" style="color:gray; font-size:12px; margin-left:10px; cursor:pointer;" onclick="toggleConnection('${post.username}', 'unconnect')">Following</span>`;
         } else {
-            followBtnHtml = `<button class="follow-btn-small follow-btn-${post.username}" onclick="toggleConnection('${post.username}', 'connect')" 
-                style="margin-left:10px; color:#1877f2; border:1px solid #1877f2; background:white; font-weight:bold; cursor:pointer; padding: 2px 8px; border-radius: 12px; font-size: 11px;">
-                Follow <span style="color:#f57f17;">+5🪙</span>
-            </button>`;
+            followBtnHtml = `<button class="follow-btn-small follow-btn-${post.username}" onclick="toggleConnection('${post.username}', 'connect')" style="margin-left:10px; color:#1877f2; border:1px solid #1877f2; background:white; font-weight:bold; cursor:pointer; padding: 2px 8px; border-radius: 12px; font-size: 11px;">Follow <span style="color:#f57f17;">+5🪙</span></button>`;
         }
     }
 
-    // ৬. কয়েন বাটন লজিক
+    // কয়েন বাটন
     const coinedBy = post.coinedBy || [];
     const hasCoined = coinedBy.includes(currentUser);
     const coinColor = hasCoined ? '#fbc02d' : 'gray';
     const coinAction = hasCoined ? '' : `giveCoin('${post._id}')`;
-    let coinText = '';
-    if (!hasCoined) {
-        coinText = ` <span id="coin-txt-${post._id}" style="font-size:10px; background:#e7f3ff; color:#1877f2; padding:2px 6px; border-radius:10px; margin-left:5px;">Get 1🪙</span>`;
-    }
+    let coinText = !hasCoined ? ` <span id="coin-txt-${post._id}" style="font-size:10px; background:#e7f3ff; color:#1877f2; padding:2px 6px; border-radius:10px; margin-left:5px;">Get 1🪙</span>` : '';
 
-    // ৭. কমেন্ট লজিক
-    const allComments = post.comments || [];
-    const visibleComments = allComments.slice(0, 2);
-    const hiddenComments = allComments.slice(2);
-    let commentsHTML = '';
-    visibleComments.forEach(c => commentsHTML += renderSingleComment(post._id, c));
-    if (hiddenComments.length > 0) {
-        commentsHTML += `<div id="hidden-comments-${post._id}" style="display:none;">`;
-        hiddenComments.forEach(c => commentsHTML += renderSingleComment(post._id, c));
-        commentsHTML += `</div><div class="see-more-btn" onclick="document.getElementById('hidden-comments-${post._id}').style.display='block'; this.style.display='none'" style="cursor:pointer; color:gray; font-size:13px; margin-top:5px;">View more comments</div>`;
-    }
+    // কমেন্ট কাউন্ট (বোঝার জন্য যে কয়টা কমেন্ট আছে)
+    const commentCount = post.comments ? post.comments.length : 0;
 
-    // ৮. মেনু অপশন লজিক (Delete / Report / Block)
-    let menuOptions = '';
-    if (post.username === currentUser) {
-        // নিজের পোস্ট হলে ডিলিট অপশন
-        menuOptions = `
-            <div class="menu-option text-danger" onclick="deletePost('${post._id}')" style="padding:10px; cursor:pointer; font-size:14px; color:red;">
-                <i class="fas fa-trash"></i> Delete Post
-            </div>`;
-    } else {
-        // অন্যের পোস্ট হলে রিপোর্ট এবং ব্লক
-        menuOptions = `
-            <div class="menu-option" onclick="reportContent('${post._id}', 'post')" style="padding:10px; cursor:pointer; color:orange; font-size:14px;">
-                <i class="fas fa-flag"></i> Report
-            </div>
-            <div class="menu-option" onclick="blockUser('${post.username}')" style="padding:10px; cursor:pointer; color:red; font-size:14px;">
-                <i class="fas fa-ban"></i> Block User
-            </div>`;
-    }
-
-    // ৯. HTML তৈরি
     const postDiv = document.createElement('div');
     postDiv.className = 'card post'; 
     
@@ -385,53 +335,44 @@ function createPostElement(post, feed, isFollowing) {
             <img src="${userPic}" class="post-avatar" onclick="viewUserProfile('${post.username}')" style="width:40px; height:40px; border-radius:50%; cursor:pointer; object-fit:cover; border:1px solid #ddd;">
             <div style="flex:1;">
                 <div style="display:flex; align-items:center;">
-                    <h4 style="margin:0; cursor:pointer;" onclick="viewUserProfile('${post.username}')">
-                        ${post.username} ${locationHTML}
-                    </h4>
+                    <h4 style="margin:0; cursor:pointer;" onclick="viewUserProfile('${post.username}')">${post.username} ${locationHTML}</h4>
                     ${followBtnHtml}
                 </div>
-                <span style="font-size:12px; color:gray;">
-                    Just now · ${privacyIcon}
-                </span>
+                <span style="font-size:12px; color:gray;">Just now · ${privacyIcon}</span>
             </div>
             
-            <!-- মেনু -->
             <div class="post-menu-container" style="position:relative;">
-                <button class="three-dots-btn" onclick="togglePostMenu('${post._id}')" style="background:none; border:none; font-size:20px; cursor:pointer;">⋮</button>
-                <div id="menu-${post._id}" class="post-dropdown-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.2); width:150px; border-radius:5px; z-index:10;">
-                    <div class="menu-option" onclick="downloadMedia('${post.mediaUrl}', '${post.mediaType}')" style="padding:10px; cursor:pointer; font-size:14px;">
-                        <i class="fas fa-download"></i> Download
-                    </div>
-                    ${menuOptions} <!-- এখানে মেনু অপশন বসবে -->
+                <button onclick="togglePostMenu('${post._id}')" style="background:none; border:none; font-size:20px; cursor:pointer;">⋮</button>
+                <div id="menu-${post._id}" class="post-dropdown-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.2); width:130px; border-radius:5px; z-index:10;">
+                    <div style="padding:10px; cursor:pointer;" onclick="downloadMedia('${post.mediaUrl}', '${post.mediaType}')">Download</div>
+                    ${post.username === currentUser ? `<div style="padding:10px; cursor:pointer; color:red;" onclick="deletePost('${post._id}')">Delete</div>` : ''}
                 </div>
             </div>
         </div>
 
-        <div style="padding:0 5px;">
-            ${captionHTML}
-            ${mediaContent}
-        </div>
+        <div style="padding:0 5px;">${captionHTML} ${mediaContent}</div>
 
-        <div class="actions" style="padding:10px; border-top:1px solid #eee; display:flex; margin-top:10px;">
+        <div class="actions" style="padding:10px; border-top:1px solid #eee; display:flex; margin-top:10px; justify-content:space-between;">
+            
             <button id="coin-btn-${post._id}" onclick="${coinAction}" style="flex:1; background:none; border:none; color:${coinColor}; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center;">
                 <i class="fas fa-coins"></i>&nbsp; <span id="coin-val-${post._id}">${post.coins || 0}</span> ${coinText}
             </button>
-            <button onclick="document.getElementById('comment-${post._id}').focus()" style="flex:1; background:none; border:none; font-weight:bold; color:gray;"><i class="far fa-comment-alt"></i> Comment</button>
-            <button onclick="sharePost('${post.mediaUrl}')" style="flex:1; background:none; border:none; font-weight:bold; color:gray;"><i class="fas fa-share"></i> Share</button>
+            
+            <!-- 👇 কমেন্ট বাটন (ক্লিক করলে মোডাল ওপেন হবে) -->
+            <button onclick="openPostComments('${post._id}')" style="flex:1; background:none; border:none; font-weight:bold; color:gray; cursor:pointer;">
+                <i class="far fa-comment-alt"></i> Comment (${commentCount})
+            </button>
+            
+            <button onclick="sharePost('${post.mediaUrl}')" style="flex:1; background:none; border:none; font-weight:bold; color:gray; cursor:pointer;">
+                <i class="fas fa-share"></i> Share
+            </button>
         </div>
-
-        <div style="padding:10px; background:#f9f9f9; border-radius:0 0 10px 10px;">
-            <div id="comments-list-${post._id}" class="comments-list" style="margin-bottom:10px;">${commentsHTML}</div>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="comment-${post._id}" placeholder="কমেন্ট লিখুন..." style="flex:1; padding:8px 12px; border-radius:20px; border:1px solid #ddd; outline:none;">
-                <button onclick="addComment('${post._id}')" style="background:#1877f2; color:white; border-radius:50%; width:35px; height:35px; border:none; cursor:pointer;">➤</button>
-            </div>
-        </div>
+        
+        <!-- ❌ নিচের ইনপুট এবং লিস্ট ডিলিট করা হয়েছে -->
     `;
     
     feed.appendChild(postDiv);
 }
-
 // --- script.js এর renderSingleComment ফাংশন (আপডেট করা) ---
 function renderSingleComment(postId, c) {
     // ১. রিপ্লাইগুলো দেখানোর জন্য একটি কন্টেইনার আইডি তৈরি
@@ -3795,4 +3736,135 @@ async function toggleBlockStatus(isBlocked) {
     } catch (err) {
         alert("সার্ভার সমস্যা!");
     }
+}
+
+// ================= সাধারণ পোস্ট কমেন্ট সিস্টেম =================
+
+// ১. কমেন্ট মোডাল ওপেন করা
+async function openPostComments(postId) {
+    const modal = document.getElementById('post-comment-modal');
+    const list = document.getElementById('post-comments-list');
+    const btn = document.getElementById('postCommentBtn');
+    const myPic = document.getElementById('modal-my-pic');
+
+    // আমার ছবি সেট করা
+    myPic.src = localStorage.getItem('profilePic') || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+    
+    // মোডাল দেখানো
+    modal.style.display = 'flex';
+    list.innerHTML = '<div style="text-align:center; padding:20px;">🔄 লোডিং...</div>';
+
+    // সেন্ড বাটনে লজিক সেট করা
+    btn.onclick = function() { addPostComment(postId); };
+
+    try {
+        // সার্ভার থেকে পোস্ট আনা
+        const res = await fetch('/posts');
+        const posts = await res.json();
+        const post = posts.find(p => p._id === postId);
+
+        // সব ইউজার আনা (ছবি দেখানোর জন্য)
+        // (বড় অ্যাপে আমরা প্রতিবার সব ইউজার আনি না, কিন্তু এখানে সহজ করার জন্য আনছি)
+        const userRes = await fetch('/users');
+        const allUsers = await userRes.json();
+
+        list.innerHTML = ''; // লোডিং ক্লিয়ার
+
+        if (!post.comments || post.comments.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:gray; margin-top:50px;">কোনো কমেন্ট নেই।<br>প্রথম কমেন্টটি আপনি করুন!</div>';
+        } else {
+            // আমাদের আগের renderSingleComment ফাংশন ব্যবহার করে সব কমেন্ট দেখানো
+            post.comments.forEach(c => {
+                // ইউজারের সঠিক ছবি বের করা
+                const commenter = allUsers.find(u => u.username === c.user);
+                // আমরা renderSingleComment এ ছবি পাস করার ব্যবস্থা করিনি আগে, তাই এখানে ম্যানুয়ালি করতে পারি
+                // অথবা renderSingleComment আপডেট করতে পারি।
+                // সহজ উপায়: আমরা HTML স্ট্রিং এখানে তৈরি করি:
+                
+                const pic = commenter ? commenter.profilePic : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+                
+                // আগের renderSingleComment ফাংশনটি HTML রিটার্ন করে, আমরা সেটা ব্যবহার করব
+                // তবে ছবিটা ডাইনামিক করার জন্য আমাদের renderSingleComment ফাংশনে ছবি পাস করা উচিত ছিল।
+                // সমস্যা নেই, আমরা এখানে সরাসরি কোড বসাচ্ছি:
+                
+                let repliesHTML = '';
+                if(c.replies) {
+                    c.replies.forEach(r => {
+                        repliesHTML += `
+                        <div style="margin-top:5px; margin-left:40px; font-size:13px; display:flex; gap:5px;">
+                            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:20px; height:20px; border-radius:50%;">
+                            <div style="background:#e4e6eb; padding:5px 10px; border-radius:10px;">
+                                <b>${r.user}</b> ${r.text}
+                            </div>
+                        </div>`;
+                    });
+                }
+
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div class="comment-wrapper" style="margin-bottom:15px;">
+                        <div style="display:flex; gap:8px;">
+                            <img src="${pic}" class="comment-avatar" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
+                            <div>
+                                <div class="comment-bubble" style="background:#f0f2f5; padding:8px 12px; border-radius:18px; display:inline-block;">
+                                    <b style="cursor:pointer;" onclick="viewUserProfile('${c.user}')">${c.user}</b> 
+                                    <span style="margin-left:5px;">${c.text}</span>
+                                </div>
+                                <div style="font-size:12px; color:gray; margin-left:10px; margin-top:2px; display:flex; gap:10px;">
+                                    <span style="cursor:pointer; font-weight:bold;" onclick="likeComment('${postId}', '${c._id}')">Like (${c.likes || 0})</span>
+                                    <span style="cursor:pointer; font-weight:bold;" onclick="document.getElementById('modal-reply-box-${c._id}').style.display='flex'">Reply</span>
+                                    <span>Just now</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${repliesHTML}
+
+                        <!-- রিপ্লাই বক্স -->
+                        <div id="modal-reply-box-${c._id}" style="display:none; margin-top:5px; margin-left:45px; gap:5px;">
+                            <input type="text" id="modal-reply-input-${c._id}" placeholder="Reply..." style="padding:5px; border-radius:15px; border:1px solid #ddd; font-size:12px; width:150px;">
+                            <button onclick="submitModalReply('${postId}', '${c._id}')" style="font-size:11px; background:none; border:none; color:blue; cursor:pointer;">Send</button>
+                        </div>
+                    </div>`;
+                
+                list.appendChild(div);
+            });
+        }
+    } catch(err) { console.log(err); }
+}
+
+// ২. কমেন্ট পোস্ট করা (মোডাল থেকে)
+async function addPostComment(postId) {
+    const input = document.getElementById('postCommentInput');
+    const text = input.value;
+    if(!text) return;
+
+    try {
+        const res = await fetch(`/comment/${postId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: currentUser, text: text })
+        });
+        
+        if(res.ok) {
+            input.value = '';
+            openPostComments(postId); // লিস্ট রিফ্রেশ
+            // হোম পেজ রিফ্রেশ না করলেও চলবে, বাটন ক্লিক করলে আবার লোড হবে
+        }
+    } catch(err) { alert("সমস্যা হয়েছে"); }
+}
+
+// ৩. রিপ্লাই সাবমিট (মোডাল এর জন্য)
+async function submitModalReply(postId, commentId) {
+    const input = document.getElementById(`modal-reply-input-${commentId}`);
+    const text = input.value;
+    if(!text) return;
+
+    await fetch(`/reply-comment/${postId}/${commentId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: currentUser, text: text })
+    });
+
+    openPostComments(postId); // রিফ্রেশ
 }

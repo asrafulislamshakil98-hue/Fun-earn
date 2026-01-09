@@ -734,6 +734,34 @@
         </div>
     </div>
 
+    <!-- সাধারণ পোস্ট কমেন্ট মোডাল -->
+    <div id="post-comment-modal" class="modal" style="display: none; z-index: 15000;">
+        <div class="modal-content" style="width: 500px; height: 600px; display:flex; flex-direction:column; padding:0; border-radius: 15px; overflow: hidden; background: white;">
+        
+            <!-- ১. হেডার -->
+            <div style="padding:15px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">Comments</h3>
+                <span onclick="document.getElementById('post-comment-modal').style.display='none'" style="cursor:pointer; font-size:28px; color:gray;">&times;</span>
+            </div>
+
+            <!-- ২. কমেন্ট লিস্ট (এখানে সব কমেন্ট লোড হবে) -->
+            <div id="post-comments-list" style="flex:1; overflow-y:auto; padding:15px; background:#f0f2f5;">
+                <!-- জাভাস্ক্রিপ্ট দিয়ে এখানে কমেন্ট আসবে -->
+            </div>
+
+            <!-- ৩. কমেন্ট লেখার জায়গা -->
+            <div style="padding:10px; border-top:1px solid #ddd; display:flex; gap:10px; background:white; align-items:center;">
+               <img id="modal-my-pic" src="" style="width:35px; height:35px; border-radius:50%;">
+               <div style="flex:1; position:relative;">
+                   <input type="text" id="postCommentInput" placeholder="Write a comment..." style="width:100%; padding:10px 40px 10px 15px; border:1px solid #ddd; border-radius:20px; outline:none; background:#f0f2f5;">
+                   <button id="postCommentBtn" style="position:absolute; right:5px; top:50%; transform:translateY(-50%); background:none; border:none; color:#1877f2; font-size:18px; cursor:pointer;">
+                       <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- মেইন স্ক্রিপ্ট ফাইল -->
     <script src="script.js"></script>
     
