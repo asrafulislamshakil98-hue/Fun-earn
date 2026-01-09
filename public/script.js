@@ -11,7 +11,7 @@ if (token) {
     currentUser = localStorage.getItem('username');
     
     // 👇 এই অংশটি আপডেট করা হয়েছে
-    document.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', () => {
         showApp(); // অ্যাপ দেখাবে
     });
 }
@@ -191,8 +191,12 @@ function showApp() {
     if(modalName) modalName.innerText = currentUser;
 
     // ৪. পোস্ট এবং ব্যালেন্স লোড
-    if (typeof loadPosts === 'function') loadPosts();
-    if (typeof updateNavBalance === 'function') updateNavBalance();
+     if (typeof loadPosts === 'function') {
+        loadPosts(); 
+    }
+    if (typeof updateNavBalance === 'function') {
+        updateNavBalance();
+    }
 }
 
 // নিচের বারের ট্যাব কালার হ্যান্ডেলিং
