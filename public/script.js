@@ -143,35 +143,56 @@ async function login() {
 // ৩. মেইন অ্যাপ কন্ট্রোল এবং নেভিগেশন
 // ==========================================
 
+// --- অ্যাপ ওপেন করার মেইন ফাংশন (সংশোধিত) ---
 function showApp() {
+    // ১. স্ক্রিন পরিবর্তন
     document.getElementById('auth-section').style.display = 'none';
     document.getElementById('app-section').style.display = 'block';
     
-    // ১. নাম এবং ছবি সেট করা
-    const storedPic = localStorage.getItem('profilePic');
+    // ২. ডিফল্ট ছবি এবং স্টোরেজ থেকে ছবি নেওয়া
     const defaultPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-    const finalPic = storedPic || defaultPic;
+    let storedPic = localStorage.getItem('profilePic');
+    
+    // যদি ছবি না থাকে বা 'undefined' হয়, ডিফল্ট ব্যবহার করবে
+    if (!storedPic || storedPic === "undefined" || storedPic === "") {
+        storedPic = defaultPic;
+    }
 
-    const imagesToUpdate = ['bottom-profile-img', 'menu-user-img', 'dashboard-pic', 'modal-user-pic'];
+    // ৩. সব জায়গায় ছবি বসানো (Broken Image Fix সহ)
+    const imagesToUpdate = [
+        'nav-profile-img',      // উপরের কোণায় (যদি থাকে)
+        'bottom-profile-img',   // নিচের বারে
+        'menu-user-img',        // সেটিংস মেনুতে
+        'dashboard-pic',        // পোস্ট বক্সে
+        'modal-user-pic'        // পোস্ট মোডালে
+    ];
+
     imagesToUpdate.forEach(id => {
         const img = document.getElementById(id);
-        if (img) img.src = finalPic;
+        if (img) {
+            img.src = storedPic;
+            
+            // 👇 এই লাইনটি ম্যাজিক করবে: ছবি ভাঙা হলে ডিফল্ট ছবি বসবে
+            img.onerror = function() { 
+                this.src = defaultPic; 
+                this.onerror = null; // লুপ আটকাতে
+            };
+        }
     });
+
+    // ৪. সব জায়গায় নাম আপডেট করা
+    const navName = document.getElementById('nav-username');
+    if(navName) navName.innerText = currentUser;
 
     const menuName = document.getElementById('menu-user-name');
     if(menuName) menuName.innerText = currentUser;
+    
     const modalName = document.getElementById('modal-user-name');
     if(modalName) modalName.innerText = currentUser;
 
-    // ২. 👇 কয়েন ব্যালেন্স আপডেট করা (এটি যোগ করা হয়েছে)
-    if (typeof updateNavBalance === 'function') {
-        updateNavBalance(); 
-    }
-
-    // ৩. 👇 পোস্ট লোড করা (এটি যোগ করা হয়েছে)
-    if (typeof loadPosts === 'function') {
-        loadPosts(); 
-    }
+    // ৫. পোস্ট এবং ব্যালেন্স লোড করা
+    if (typeof loadPosts === 'function') loadPosts();
+    if (typeof updateNavBalance === 'function') updateNavBalance();
 }
 
 // নিচের বারের ট্যাব কালার হ্যান্ডেলিং
@@ -289,12 +310,12 @@ async function filterVideos() {
     }
 }
 
-// --- পোস্ট তৈরি করার মেইন ফাংশন ---
+// --- পোস্ট তৈরি করার মেইন ফাংশন (সব ফিচার + ফিক্সড) ---
 function createPostElement(post, feed, isFollowing) {
-    // ১. প্রাইভেসি চেক
+    // ১. প্রাইভেসি চেক (Only Me হলে এবং আমি মালিক না হলে দেখাবে না)
     if (post.privacy === 'private' && post.username !== currentUser) return;
 
-    // ২. মিডিয়া টাইপ
+    // ২. মিডিয়া টাইপ (ভিডিও নাকি ছবি)
     let mediaContent = '';
     if (post.mediaType === 'video') {
         mediaContent = `<video controls src="${post.mediaUrl}" 
@@ -305,15 +326,24 @@ function createPostElement(post, feed, isFollowing) {
         mediaContent = `<img src="${post.mediaUrl}" style="width:100%; margin-top:10px; object-fit:cover; border-radius:8px;">`;
     }
 
-    // ৩. ইনফো লজিক
+    // ৩. ক্যাপশন, লোকেশন এবং প্রাইভেসি লজিক
     let captionHTML = (post.caption && post.caption !== 'undefined') 
-        ? `<p style="font-size:15px; margin:8px 0; color:#050505; white-space: pre-wrap;">${post.caption}</p>` : '';
-    let locationHTML = (post.location && post.location !== 'undefined') 
-        ? ` is at <b style="color:#1877f2;">${post.location}</b>` : '';
-    let privacyIcon = post.privacy === 'private' ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-globe-americas"></i>';
-    const userPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+        ? `<p style="font-size:15px; margin:8px 0; color:#050505; white-space: pre-wrap;">${post.caption}</p>` 
+        : '';
 
-    // ৪. ফলো বাটন লজিক
+    let locationHTML = (post.location && post.location !== 'undefined') 
+        ? ` is at <b style="color:#1877f2;">${post.location}</b>` 
+        : '';
+
+    let privacyIcon = '<i class="fas fa-globe-americas" title="Public"></i>';
+    if (post.privacy === 'private') {
+        privacyIcon = '<i class="fas fa-lock" title="Only Me"></i>';
+    }
+
+    // ৪. ইউজার ছবি (ডিফল্ট)
+    const userPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"; 
+
+    // ৫. ফলো বাটন লজিক
     let followBtnHtml = '';
     if (post.username !== currentUser) {
         if (isFollowing) {
@@ -326,14 +356,17 @@ function createPostElement(post, feed, isFollowing) {
         }
     }
 
-    // ৫. কয়েন বাটন লজিক
+    // ৬. কয়েন বাটন লজিক
     const coinedBy = post.coinedBy || [];
     const hasCoined = coinedBy.includes(currentUser);
     const coinColor = hasCoined ? '#fbc02d' : 'gray';
     const coinAction = hasCoined ? '' : `giveCoin('${post._id}')`;
-    let coinText = !hasCoined ? ` <span id="coin-txt-${post._id}" style="font-size:10px; background:#e7f3ff; color:#1877f2; padding:2px 6px; border-radius:10px; margin-left:5px;">Get 1🪙</span>` : '';
+    let coinText = '';
+    if (!hasCoined) {
+        coinText = ` <span id="coin-txt-${post._id}" style="font-size:10px; background:#e7f3ff; color:#1877f2; padding:2px 6px; border-radius:10px; margin-left:5px;">Get 1🪙</span>`;
+    }
 
-    // ৬. মেনু অপশন (Report/Block)
+    // ৭. মেনু অপশন লজিক (Report/Block/Delete)
     let menuOptions = '';
     if (post.username === currentUser) {
         menuOptions = `<div class="menu-option text-danger" onclick="deletePost('${post._id}')" style="padding:10px; cursor:pointer; font-size:14px; color:red;"><i class="fas fa-trash"></i> Delete Post</div>`;
@@ -343,17 +376,23 @@ function createPostElement(post, feed, isFollowing) {
             <div class="menu-option" onclick="blockUser('${post.username}')" style="padding:10px; cursor:pointer; color:red; font-size:14px;"><i class="fas fa-ban"></i> Block User</div>`;
     }
 
-    // ৭. কমেন্ট সংখ্যা
+    // ৮. কমেন্ট সংখ্যা
     const commentCount = post.comments ? post.comments.length : 0;
 
-    // ৮. HTML তৈরি
+    // ৯. HTML তৈরি
     const postDiv = document.createElement('div');
     postDiv.className = 'card post'; 
     
     postDiv.innerHTML = `
-        <!-- হেডার -->
         <div class="post-header" style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-            <img src="${userPic}" class="post-avatar" onclick="viewUserProfile('${post.username}')" style="width:40px; height:40px; border-radius:50%; cursor:pointer; object-fit:cover; border:1px solid #ddd;">
+            
+            <!-- 👇 onerror যুক্ত করা হয়েছে (ছবি ভাঙলে ডিফল্ট দেখাবে) -->
+            <img src="${userPic}" 
+                 class="post-avatar" 
+                 onclick="viewUserProfile('${post.username}')" 
+                 onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'"
+                 style="width:40px; height:40px; border-radius:50%; cursor:pointer; object-fit:cover; border:1px solid #ddd;">
+            
             <div style="flex:1;">
                 <div style="display:flex; align-items:center;">
                     <h4 style="margin:0; cursor:pointer;" onclick="viewUserProfile('${post.username}')">
@@ -361,9 +400,12 @@ function createPostElement(post, feed, isFollowing) {
                     </h4>
                     ${followBtnHtml}
                 </div>
-                <span style="font-size:12px; color:gray;">Just now · ${privacyIcon}</span>
+                <span style="font-size:12px; color:gray;">
+                    Just now · ${privacyIcon}
+                </span>
             </div>
             
+            <!-- মেনু বাটন -->
             <div class="post-menu-container" style="position:relative;">
                 <button class="three-dots-btn" onclick="togglePostMenu('${post._id}')" style="background:none; border:none; font-size:20px; cursor:pointer;">⋮</button>
                 <div id="menu-${post._id}" class="post-dropdown-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.2); width:150px; border-radius:5px; z-index:10;">
@@ -381,7 +423,7 @@ function createPostElement(post, feed, isFollowing) {
             ${mediaContent}
         </div>
 
-        <!-- অ্যাকশন বাটন (নিচে কোনো ইনপুট বক্স নেই) -->
+        <!-- অ্যাকশন বাটনস -->
         <div class="actions" style="padding:10px; border-top:1px solid #eee; display:flex; margin-top:10px; justify-content:space-between;">
             
             <!-- কয়েন -->
@@ -389,7 +431,7 @@ function createPostElement(post, feed, isFollowing) {
                 <i class="fas fa-coins"></i>&nbsp; <span id="coin-val-${post._id}">${post.coins || 0}</span> ${coinText}
             </button>
             
-            <!-- 👇 কমেন্ট বাটন (ক্লিক করলে মোডাল ওপেন হবে) -->
+            <!-- কমেন্ট (মোডাল ওপেন হবে) -->
             <button onclick="openPostComments('${post._id}')" style="flex:1; background:none; border:none; font-weight:bold; color:gray; cursor:pointer;">
                 <i class="far fa-comment-alt"></i> Comment (${commentCount})
             </button>
@@ -400,7 +442,7 @@ function createPostElement(post, feed, isFollowing) {
             </button>
         </div>
         
-        <!-- ❌ নিচের কমেন্ট বক্সটি মুছে ফেলা হয়েছে -->
+        <!-- কমেন্ট বক্স (ইনলাইন নেই, মোডাল আসবে) -->
     `;
     
     feed.appendChild(postDiv);
