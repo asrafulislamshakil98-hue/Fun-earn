@@ -395,58 +395,17 @@
         </div>
     </div>
 
-    <!-- ফুল স্ক্রিন শর্টস মোডাল (ID ফিক্সড) -->
-<div id="full-shorts-modal" class="modal" style="display: none; background: black; z-index: 10000;">
-    <div class="modal-content" style="width: 100%; height: 100%; background: black; padding: 0; display: flex; justify-content: center; align-items: center; position: relative;">
-        
+    <!-- TikTok স্টাইল শর্টস মোডাল (স্ক্রলিং সাপোর্ট) -->
+    <div id="full-shorts-modal" class="modal" style="display: none; background: black; z-index: 10000;">
+    
         <!-- ক্লোজ বাটন -->
-        <span onclick="closeFullShorts()" style="position: absolute; top: 20px; left: 20px; color: white; font-size: 30px; cursor: pointer; z-index: 100; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 50%;">&times;</span>
+        <span onclick="closeFullShorts()" style="position: absolute; top: 20px; left: 20px; color: white; font-size: 30px; cursor: pointer; z-index: 20000; background: rgba(0,0,0,0.3); padding: 5px 15px; border-radius: 50%;">&times;</span>
 
-        <div class="full-shorts-container" style="position: relative; width: 100%; max-width: 500px; height: 100%;">
-            
-            <!-- ১. ভিডিওতে ক্লিক লেয়ার -->
-            <div onclick="toggleShortsPlay()" style="width:100%; height:80%; position:absolute; top:0; left:0; z-index:5;"></div>
-
-            <!-- ২. ভিডিও প্লেয়ার -->
-            <video id="full-short-video" src="" loop playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>
-
-            <!-- ৩. প্লে/পজ আইকন (এটি মিসিং ছিল বা জাভাস্ক্রিপ্ট পাচ্ছিল না) -->
-            <div id="play-pause-icon" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:6; font-size:60px; color:white; opacity:0.8; pointer-events:none;">
-                <i class="fas fa-play"></i>
-            </div>
-
-            <!-- ৪. ডান পাশের বাটন -->
-            <div class="shorts-right-actions" style="z-index: 20;">
-                <div id="full-short-like-btn"></div>
-                <div id="full-short-comment-btn"></div>
-                <div onclick="alert('Link Copied!')"><i class="fas fa-share"></i><span>Share</span></div>
-            </div>
-
-            <!-- ৫. নিচের ইনফো -->
-            <div class="shorts-bottom-info" style="position: absolute; bottom: 40px; left: 15px; width: 90%; z-index: 20;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                    <img id="full-short-profile-pic" src="" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; cursor: pointer;">
-                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <h4 id="full-short-username" style="margin: 0; color: white; cursor: pointer; text-shadow: 1px 1px 2px black; font-size: 16px;"></h4>
-                            <div id="full-short-follow-btn"></div>
-                        </div>
-                    </div>
-                </div>
-                <p id="full-short-caption" style="color: white; font-size: 14px; margin: 0; text-shadow: 1px 1px 2px black; opacity: 0.9;"></p>
-            </div>
-
-            <!-- ৬. টাইমার -->
-            <div id="video-timer" style="position:absolute; bottom:15px; right:15px; color:white; font-size:12px; z-index:25; text-shadow:1px 1px 2px black; font-weight:bold;">
-                00:00 / 00:00
-            </div>
-
-            <!-- ৭. প্রোগ্রেস বার -->
-            <input type="range" id="shorts-progress-bar" min="0" max="100" value="0" step="0.1" oninput="seekVideo()" 
-               style="position:absolute; bottom:0; left:0; width:100%; z-index:30; cursor:pointer; accent-color: red; height: 4px; margin:0;">
+        <!-- স্ক্রল কন্টেইনার -->
+        <div id="shorts-scroll-container" class="shorts-scroll-container">
+        <!-- JS দিয়ে এখানে ভিডিও স্লাইড বসবে -->
         </div>
     </div>
-</div>
     <!-- ================== ৪. নিচের ফিক্সড নেভিগেশন বার ================== -->
     <div class="bottom-nav">
         <!-- প্রোফাইল -->

@@ -2044,3 +2044,44 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
     border-bottom: none;
 }
 
+/* --- টপ শর্টস সাইজ ফিক্স --- */
+.stories-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px;
+    white-space: nowrap;
+    scrollbar-width: none; /* ফায়ারফক্স */
+}
+.stories-container::-webkit-scrollbar { display: none; } /* ক্রোম */
+
+/* কার্ডের ফিক্সড সাইজ */
+.story-card {
+    min-width: 120px;   /* ফিক্সড প্রস্থ */
+    height: 200px;      /* ফিক্সড উচ্চতা */
+    background: black;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    flex-shrink: 0;     /* চ্যাপ্টা হবে না */
+    border: 1px solid #ddd;
+}
+
+/* ভিডিও বা ছবি যাতে পুরোটা জুড়ে থাকে */
+.story-video-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* গ্যাপ থাকবে না */
+    display: block;
+}
+
+/* Create Short বাটনও একই সাইজের হবে */
+.create-story-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: white;
+}
