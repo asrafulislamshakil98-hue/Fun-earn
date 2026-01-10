@@ -1,19 +1,73 @@
 // ==========================================
-// ১. ভেরিয়েবল এবং ইনিশিয়ালাইজেশন (সংশোধিত)
+// ১. ভেরিয়েবল এবং ইনিশিয়ালাইজেশন (ফিক্সড)
 // ==========================================
 const socket = io();
 let currentUser = null;
 let token = localStorage.getItem('token');
 let currentChatFriend = null;
 
-// পেজ লোড হলে চেক করা
-if (token) {
-    currentUser = localStorage.getItem('username');
+// পেজ পুরোপুরি লোড হওয়ার পর কোড রান করবে
+document.addEventListener('DOMContentLoaded', () => {
     
-    // 👇 এই অংশটি আপডেট করা হয়েছে
-    window.addEventListener('DOMContentLoaded', () => {
-        showApp(); // অ্যাপ দেখাবে
+    // টোকেন চেক
+    if (token) {
+        currentUser = localStorage.getItem('username');
+        showApp(); // লগিন থাকলে অ্যাপ দেখাবে
+    } else {
+        // লগিন না থাকলে লগিন পেজ দেখাবে
+        const authSection = document.getElementById('auth-section');
+        const appSection = document.getElementById('app-section');
+        
+        if (authSection) authSection.style.display = 'flex';
+        if (appSection) appSection.style.display = 'none';
+    }
+
+});
+
+// ==========================================
+// ২. মেইন অ্যাপ কন্ট্রোল (Null Error ফিক্সড)
+// ==========================================
+
+function showApp() {
+    const authSection = document.getElementById('auth-section');
+    const appSection = document.getElementById('app-section');
+
+    // সেফটি চেক: যদি আইডি না পায়, তবে এরর দেবে না
+    if (authSection) authSection.style.display = 'none';
+    if (appSection) appSection.style.display = 'block';
+    
+    // ছবি এবং নাম সেট করা
+    const storedPic = localStorage.getItem('profilePic');
+    const defaultPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+    
+    // যদি পুরনো ছবি 404 হয় বা না থাকে, তবে ডিফল্ট ব্যবহার করবে
+    const finalPic = (storedPic && storedPic !== "undefined") ? storedPic : defaultPic;
+
+    // সব জায়গায় ছবি বসানো
+    const imagesToUpdate = ['bottom-profile-img', 'menu-user-img', 'dashboard-pic', 'modal-user-pic', 'nav-profile-img'];
+    
+    imagesToUpdate.forEach(id => {
+        const img = document.getElementById(id);
+        if (img) {
+            img.src = finalPic;
+            // 👇 ৪-০-৪ এরর ফিক্স: ছবি না পেলে ডিফল্ট দেখাবে
+            img.onerror = function() {
+                this.src = defaultPic;
+                this.onerror = null;
+            };
+        }
     });
+
+    // নাম সেট করা
+    const menuName = document.getElementById('menu-user-name');
+    if(menuName) menuName.innerText = currentUser;
+    
+    const modalName = document.getElementById('modal-user-name');
+    if(modalName) modalName.innerText = currentUser;
+
+    // ডাটা লোড
+    if (typeof loadPosts === 'function') loadPosts();
+    if (typeof updateNavBalance === 'function') updateNavBalance();
 }
 
 // ================= অথেনটিকেশন (সরাসরি - OTP ছাড়া) =================
@@ -142,62 +196,6 @@ async function login() {
     }
 }
 
-// ... এরপর showApp() থেকে বাকি কোডগুলো আগের মতোই থাকবে ...
-// ==========================================
-// ৩. মেইন অ্যাপ কন্ট্রোল এবং নেভিগেশন
-// ==========================================
-
-// --- script.js এর showApp ফাংশন (সম্পূর্ণ ফিক্সড) ---
-function showApp() {
-    document.getElementById('auth-section').style.display = 'none';
-    document.getElementById('app-section').style.display = 'block';
-    
-    // ১. লোকাল স্টোরেজ থেকে ছবি নেওয়া
-    const defaultPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-    let storedPic = localStorage.getItem('profilePic');
-    
-    // যদি ছবি না থাকে
-    if (!storedPic || storedPic === "undefined" || storedPic === "") {
-        storedPic = defaultPic;
-    }
-
-    // ২. সব জায়গায় ছবি বসানো (মেনু, বটম বার, ড্যাশবোর্ড)
-    const imagesToUpdate = [
-        'bottom-profile-img',  // নিচের বারের ছবি
-        'menu-user-img',       // মেনুর ছবি
-        'dashboard-pic',       // পোস্ট করার বক্সের ছবি
-        'modal-user-pic',      // পোস্ট মোডালের ছবি
-        'nav-profile-img'      // উপরের বারের ছবি (যদি থাকে)
-    ];
-
-    imagesToUpdate.forEach(id => {
-        const img = document.getElementById(id);
-        if (img) {
-            img.src = storedPic;
-            
-            // ছবি ভাঙলে ডিফল্ট দেখাবে
-            img.onerror = function() { 
-                this.src = defaultPic; 
-                this.onerror = null;
-            };
-        }
-    });
-
-    // ৩. নাম আপডেট করা
-    const menuName = document.getElementById('menu-user-name');
-    if(menuName) menuName.innerText = currentUser;
-    
-    const modalName = document.getElementById('modal-user-name');
-    if(modalName) modalName.innerText = currentUser;
-
-    // ৪. পোস্ট এবং ব্যালেন্স লোড
-     if (typeof loadPosts === 'function') {
-        loadPosts(); 
-    }
-    if (typeof updateNavBalance === 'function') {
-        updateNavBalance();
-    }
-}
 
 // নিচের বারের ট্যাব কালার হ্যান্ডেলিং
 function setActiveBottomTab(index) {
@@ -327,7 +325,9 @@ function createPostElement(post, feed, isFollowing) {
                           style="width:100%; margin-top:10px; border-radius:8px; background:black; max-height:500px;">
                         </video>`;
     } else if (post.mediaUrl) {
-        mediaContent = `<img src="${post.mediaUrl}" style="width:100%; margin-top:10px; object-fit:cover; border-radius:8px;">`;
+         mediaContent = `<img src="${post.mediaUrl}" 
+          onerror="this.onerror=null; this.src='https://via.placeholder.com/500x300?text=Image+Deleted';" 
+          style="width:100%; margin-top:10px; object-fit:cover; border-radius:8px;">`;
     }
 
     // ৩. ক্যাপশন, লোকেশন এবং প্রাইভেসি লজিক
