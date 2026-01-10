@@ -2057,7 +2057,7 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
 
 /* কার্ডের ফিক্সড সাইজ */
 .story-card {
-    min-width: 120px;   /* ফিক্সড প্রস্থ */
+    min-width: 100px;   /* ফিক্সড প্রস্থ */
     height: 200px;      /* ফিক্সড উচ্চতা */
     background: black;
     border-radius: 12px;
@@ -2071,8 +2071,8 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
 
 /* ভিডিও বা ছবি যাতে পুরোটা জুড়ে থাকে */
 .story-video-thumb {
-    width: 100%;
-    height: 100%;
+    width: 90%;
+    height: 90%;
     object-fit: cover; /* গ্যাপ থাকবে না */
     display: block;
 }
@@ -2127,7 +2127,7 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 4px;
+    height: 8px;
     appearance: none; 
     -webkit-appearance: none;
     background: rgba(255, 255, 255, 0.3);
