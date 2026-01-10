@@ -2086,20 +2086,3 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
     background: white;
 }
 
-/* style.css এ নিশ্চিত করুন */
-.shorts-scroll-container {
-    width: 100%;
-    height: 100%;
-    overflow-y: scroll;
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
-}
-.short-slide {
-    width: 100%;
-    height: 100%;
-    scroll-snap-align: start;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    background: black;
-}
