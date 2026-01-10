@@ -747,161 +747,163 @@ async function filterShorts() {
     }
 }
 
-// --- ২. ফুল স্ক্রিন শর্টস ওপেন (মেনু ও কয়েন টেক্সট সহ) ---
-async function openFullShorts(startPostId) {
+// ==========================================
+// 🎬 ফুল স্ক্রিন শর্টস প্লেয়ার লজিক
+// ==========================================
+
+// ১. ফুল স্ক্রিন শর্টস ওপেন করা
+async function openFullShorts(postId) {
     const modal = document.getElementById('full-shorts-modal');
-    const container = document.getElementById('shorts-scroll-container'); // TikTok স্টাইল কন্টেইনার
-    
-    // ১. ডাটা আনা
+    const video = document.getElementById('full-short-video');
+    const container = document.querySelector('.full-shorts-container');
+    const progressBar = document.getElementById('shorts-progress-bar');
+    const timerDisplay = document.getElementById('video-timer');
+    const playIcon = document.getElementById('play-pause-icon');
+
+    // সেফটি চেক
+    if (!video || !modal) return console.error("HTML এলিমেন্ট পাওয়া যায়নি!");
+
     try {
+        // ডাটা আনা
         const [postRes, userRes] = await Promise.all([ fetch('/posts'), fetch('/users') ]);
         const posts = await postRes.json();
         const allUsers = await userRes.json();
-
-        // ২. শুধু শর্টস ফিল্টার করা
-        const allShorts = posts.filter(p => p.isShort === true);
         
-        // ৩. কন্টেইনার খালি করা এবং লোড করা
-        container.innerHTML = '';
+        const post = posts.find(p => p._id === postId);
+        if (!post) return;
 
-        // সব ভিডিও স্লাইড আকারে যোগ করা
-        allShorts.forEach(post => {
-            const slideHTML = renderShortSlide(post, allUsers);
-            container.insertAdjacentHTML('beforeend', slideHTML);
-        });
+        const me = allUsers.find(u => u.username === currentUser);
+        const myFollowing = me ? (me.following || []) : [];
+        const owner = allUsers.find(u => u.username === post.username);
+        const ownerPic = owner ? owner.profilePic : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
 
-        // ৪. মোডাল দেখানো
-        modal.style.display = 'block';
+        // --- ভিডিও সেটআপ ---
+        video.src = post.mediaUrl;
+        
+        // টাইমার এবং প্রোগ্রেস বার আপডেট
+        video.ontimeupdate = function() {
+            if (video.duration && !isNaN(video.duration)) {
+                // স্লাইডার আপডেট
+                const percent = (video.currentTime / video.duration) * 100;
+                if(progressBar) progressBar.value = percent;
+                
+                // সময় টেক্সট আপডেট
+                const current = formatTime(video.currentTime);
+                const total = formatTime(video.duration);
+                if(timerDisplay) timerDisplay.innerText = `${current} / ${total}`;
+            }
+        };
 
-        // ৫. যেটাতে ক্লিক করেছেন সেখানে জাম্প করা
-        const targetSlide = document.getElementById(`slide-${startPostId}`);
-        if(targetSlide) {
-            targetSlide.scrollIntoView({ behavior: 'auto' }); // এনিমেশন ছাড়া জাম্প
+        // রিসেট করা
+        if(progressBar) progressBar.value = 0;
+        if(timerDisplay) timerDisplay.innerText = "00:00 / 00:00";
+        if(playIcon) playIcon.style.display = 'none';
+
+        // --- প্রোফাইল ও টেক্সট ---
+        const profilePic = document.getElementById('full-short-profile-pic');
+        profilePic.src = ownerPic;
+        profilePic.onclick = function() { closeFullShorts(); viewUserProfile(post.username); };
+        
+        const nameEl = document.getElementById('full-short-username');
+        nameEl.innerText = `@${post.username}`;
+        nameEl.onclick = function() { closeFullShorts(); viewUserProfile(post.username); };
+        
+        document.getElementById('full-short-caption').innerText = post.caption || '';
+
+        // --- ফলো বাটন (+5 কয়েন সহ) ---
+        const followContainer = document.getElementById('full-short-follow-btn');
+        if (followContainer) {
+            if (post.username === currentUser) {
+                followContainer.innerHTML = ''; 
+            } else if (myFollowing.includes(post.username)) {
+                followContainer.innerHTML = `<button class="short-follow-btn following" onclick="toggleConnection('${post.username}', 'unconnect'); closeFullShorts();">Following</button>`;
+            } else {
+                followContainer.innerHTML = `<button class="short-follow-btn" onclick="toggleConnection('${post.username}', 'connect'); closeFullShorts();">Follow <span style="color:#e65100;">+5🪙</span></button>`;
+            }
         }
 
-        // ৬. অটো প্লে সেটআপ (যাতে স্ক্রল করলে প্লে হয়)
-        setupVideoObserver();
+        // --- লাইক ও কমেন্ট বাটন ---
+        const coinAction = post.coinedBy && post.coinedBy.includes(currentUser) ? '' : `giveCoin('${post._id}')`;
+        const coinColor = post.coinedBy && post.coinedBy.includes(currentUser) ? '#fbc02d' : 'white';
+        
+        document.getElementById('full-short-like-btn').innerHTML = `<div onclick="${coinAction}" style="color:${coinColor}; cursor:pointer;"><i class="fas fa-coins"></i></div><span>${post.coins || 0}</span>`;
+        document.getElementById('full-short-comment-btn').innerHTML = `<div onclick="openShortsComments('${post._id}')" style="cursor:pointer;"><i class="fas fa-comment-dots"></i></div><span>${post.comments ? post.comments.length : 0}</span>`;
 
-    } catch(err) {
-        console.log(err);
-    }
-}
+        // --- টপ মেনু (Download & Delete) ---
+        const oldMenu = document.querySelector('.shorts-top-right');
+        if(oldMenu) oldMenu.remove(); // আগেরটা থাকলে মুছে ফেলবে
 
-// --- স্লাইড তৈরির হেল্পার ফাংশন ---
-function renderShortSlide(post, allUsers) {
-    const me = allUsers.find(u => u.username === currentUser);
-    const myFollowing = me ? (me.following || []) : [];
-    const owner = allUsers.find(u => u.username === post.username);
-    const ownerPic = owner ? (owner.profilePic || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png") : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+        const deleteOption = post.username === currentUser 
+            ? `<div class="s-menu-item" onclick="deletePost('${post._id}')" style="color:red;"><i class="fas fa-trash"></i> Delete</div>` 
+            : '';
 
-    // বাটন লজিক
-    const hasCoined = post.coinedBy && post.coinedBy.includes(currentUser);
-    const coinColor = hasCoined ? '#fbc02d' : 'white';
-    const coinAction = hasCoined ? '' : `giveCoin('${post._id}')`;
-
-    let followBtn = '';
-    if (post.username !== currentUser && !myFollowing.includes(post.username)) {
-        followBtn = `<button class="short-follow-btn" onclick="toggleConnection('${post.username}', 'connect')">Follow</button>`;
-    }
-
-    // TikTok এর মতো স্লাইড স্ট্রাকচার
-    return `
-    <div class="short-slide" id="slide-${post._id}">
-        <!-- ভিডিও -->
-        <video src="${post.mediaUrl}" loop class="reel-video" onclick="toggleVideo(this)"></video>
-
-        <!-- ডান পাশের বাটন -->
-        <div class="shorts-right-actions" style="z-index:10; right:10px; bottom:120px;">
-            <div onclick="${coinAction}" style="color:${coinColor}"><i class="fas fa-coins"></i></div>
-            <span id="coin-count-${post._id}">${post.coins || 0}</span>
-            
-            <div onclick="openShortsComments('${post._id}')" style="margin-top:20px;"><i class="fas fa-comment-dots"></i></div>
-            <span>${post.comments ? post.comments.length : 0}</span>
-
-            <div style="margin-top:20px;" onclick="sharePost('${post.mediaUrl}')"><i class="fas fa-share"></i></div>
-            <span>Share</span>
-        </div>
-
-        <!-- নিচের ইনফো -->
-        <div class="shorts-bottom-info" style="z-index:10; left:10px; bottom:20px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${ownerPic}" style="width:45px; height:45px; border-radius:50%; border:2px solid white;" onclick="closeFullShorts(); viewUserProfile('${post.username}')">
-                <div>
-                    <h4 style="margin:0; color:white;" onclick="closeFullShorts(); viewUserProfile('${post.username}')">@${post.username}</h4>
-                    ${followBtn}
+        const menuHTML = `
+            <div class="shorts-top-right">
+                <button class="shorts-menu-btn" onclick="document.getElementById('short-top-dropdown').style.display = document.getElementById('short-top-dropdown').style.display === 'block' ? 'none' : 'block'">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div id="short-top-dropdown" class="shorts-menu-dropdown">
+                    <div class="s-menu-item" onclick="downloadMedia('${post.mediaUrl}', 'video')"><i class="fas fa-download"></i> Download</div>
+                    ${deleteOption}
                 </div>
             </div>
-            <p style="color:white; margin-top:5px;">${post.caption || ''}</p>
-        </div>
-    </div>`;
+        `;
+        container.insertAdjacentHTML('beforeend', menuHTML);
+
+        // --- মোডাল ওপেন ---
+        modal.style.display = 'block';
+        
+        // ভিডিও প্লে এবং রিওয়ার্ড
+        video.play().catch(e => console.log("Autoplay blocked"));
+        claimWatchReward(postId); // দেখার সাথে সাথে কয়েন পাবে
+
+    } catch(err) { console.log(err); }
 }
 
-// --- স্ক্রল করলে ভিডিও প্লে/পজ (Observer) ---
-function setupVideoObserver() {
-    const videos = document.querySelectorAll('.reel-video');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.play(); // স্ক্রিনে আসলে প্লে
-            } else {
-                entry.target.pause(); // চলে গেলে পজ
-                entry.target.currentTime = 0;
-            }
-        });
-    }, { threshold: 0.6 });
-
-    videos.forEach(video => observer.observe(video));
+// ২. ভিডিও প্লে/পজ কন্ট্রোল
+function toggleShortsPlay() {
+    const video = document.getElementById('full-short-video');
+    const icon = document.getElementById('play-pause-icon');
+    
+    if (video.paused) {
+        video.play();
+        if(icon) icon.style.display = 'none';
+    } else {
+        video.pause();
+        if(icon) icon.style.display = 'block';
+    }
 }
 
-// ভিডিওতে ক্লিক করলে প্লে/পজ
-function toggleVideo(video) {
-    if(video.paused) video.play();
-    else video.pause();
+// ৩. স্লাইডার টানলে ভিডিও আগানো (Seek)
+function seekVideo() {
+    const video = document.getElementById('full-short-video');
+    const progressBar = document.getElementById('shorts-progress-bar');
+    
+    if (video && video.duration) {
+        const time = (progressBar.value / 100) * video.duration;
+        video.currentTime = time;
+    }
 }
 
-// সময় ফরম্যাট ফাংশন
+// ৪. সময় ফরম্যাট (মিনিট:সেকেন্ড)
 function formatTime(seconds) {
     if(isNaN(seconds)) return "00:00";
-    const min = Math.floor(seconds / 120);
-    const sec = Math.floor(seconds % 120);
+    const min = Math.floor(seconds / 60);
+    const sec = Math.floor(seconds % 60);
     return `${min}:${sec < 10 ? '0'+sec : sec}`;
 }
 
-// --- ২. প্লে/পজ টগল (কন্ট্রোল সহ) ---
-function toggleShortsPlay() {
-    const video = document.getElementById('full-short-video');
-    const controls = document.getElementById('center-controls');
-    const playIcon = document.getElementById('play-pause-icon');
-
-    if (video.paused) {
-        video.play();
-        controls.style.display = 'none'; // প্লে হলে সব বাটন গায়েব
-    } else {
-        video.pause();
-        controls.style.display = 'flex'; // পজ হলে সব বাটন আসবে
-        playIcon.innerHTML = '<i class="fas fa-play"></i>';
-    }
-}
-
-
-// --- সময় ফরম্যাট করার ছোট ফাংশন ---
-function formatTime(seconds) {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min}:${sec < 10 ? '0' : ''}${sec}`;
-}
-
-// --- ৩. মোডাল বন্ধ করা ---
+// ৫. শর্টস বন্ধ করা
 function closeFullShorts() {
     const modal = document.getElementById('full-shorts-modal');
     const video = document.getElementById('full-short-video');
-    video.pause();
-    modal.style.display = 'none';
     
-    // আবার শর্টস পেজ রিফ্রেশ করা যাতে ফলো স্ট্যাটাস আপডেট হয়
+    if(video) video.pause();
+    if(modal) modal.style.display = 'none';
+    
+    // পেজ রিফ্রেশ করে বাটন স্ট্যাটাস আপডেট রাখা
     filterShorts();
 }
-
 
 // ==========================================
 // ৬. নেটওয়ার্ক জোন (Friends/Follow)
