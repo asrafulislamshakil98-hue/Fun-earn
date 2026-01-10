@@ -779,7 +779,7 @@ async function openFullShorts(startPostId) {
     }
 }
 
-// ২. প্রতিটি স্লাইড তৈরির হেল্পার ফাংশন
+// --- ২. স্লাইড তৈরির হেল্পার ফাংশন (প্রোগ্রেস বার সহ) ---
 function renderShortSlide(post, allUsers) {
     const me = allUsers.find(u => u.username === currentUser);
     const myFollowing = me ? (me.following || []) : [];
@@ -790,7 +790,6 @@ function renderShortSlide(post, allUsers) {
     const coinAction = post.coinedBy && post.coinedBy.includes(currentUser) ? '' : `giveCoin('${post._id}')`;
     const coinColor = post.coinedBy && post.coinedBy.includes(currentUser) ? '#fbc02d' : 'white';
 
-    // ফলো বাটন
     let followBtn = '';
     if (post.username !== currentUser && !myFollowing.includes(post.username)) {
         followBtn = `<button class="short-follow-btn" onclick="toggleConnection('${post.username}', 'connect')">Follow</button>`;
@@ -800,7 +799,7 @@ function renderShortSlide(post, allUsers) {
     return `
     <div class="short-slide" id="slide-${post._id}">
         
-        <!-- ভিডিও (ক্লিক করলে পজ/প্লে) -->
+        <!-- ভিডিও -->
         <video src="${post.mediaUrl}" loop class="reel-video" onclick="toggleVideo(this)"></video>
 
         <!-- ডান পাশের অ্যাকশন বাটন -->
@@ -835,27 +834,56 @@ function renderShortSlide(post, allUsers) {
             </div>
             <p style="color:white; margin:0; text-shadow:1px 1px 2px black; font-size:14px;">${post.caption || ''}</p>
         </div>
+
+        <!-- 👇 নতুন: ভিডিও প্রোগ্রেস বার -->
+        <input type="range" class="video-progress" min="0" max="100" value="0" step="0.1" oninput="seekShortVideo(this)">
     </div>`;
 }
-
-// --- ৩. স্ক্রল এবং প্লে কন্ট্রোল (IntersectionObserver) ---
+// --- ৩. স্ক্রল এবং প্লে কন্ট্রোল (বার আপডেট সহ) ---
 function setupVideoObserver() {
     const videos = document.querySelectorAll('.reel-video');
     
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            // যদি ভিডিওটি ৬০% দেখা যায়
+            const video = entry.target;
+            const slide = video.closest('.short-slide'); // ভিডিওর প্যারেন্ট ডিভ
+            const progressBar = slide.querySelector('.video-progress'); // সেই স্লাইডের প্রোগ্রেস বার
+
             if (entry.isIntersecting) {
-                entry.target.play(); // প্লে করো
-                claimWatchReward(entry.target.getAttribute('src')); // (অপশনাল) কয়েন ফাংশন
+                video.play();
+                
+                // 👇 ভিডিও চলার সাথে বার আপডেট করা
+                video.ontimeupdate = function() {
+                    if (video.duration) {
+                        const percent = (video.currentTime / video.duration) * 100;
+                        progressBar.value = percent;
+                    }
+                };
+
+                // ওয়াচ রিওয়ার্ড
+                claimWatchReward(video.getAttribute('src')); 
+
             } else {
-                entry.target.pause(); // পজ করো
-                entry.target.currentTime = 0; // শুরু থেকে রেডি রাখো
+                video.pause();
+                video.currentTime = 0;
+                progressBar.value = 0; // বার রিসেট
             }
         });
     }, { threshold: 0.6 });
 
     videos.forEach(video => observer.observe(video));
+}
+
+// --- নতুন: ভিডিও টেনে দেখা (Seek) ---
+function seekShortVideo(input) {
+    // ইনপুট যে স্লাইডে আছে, সেই স্লাইডের ভিডিও খুঁজে বের করা
+    const slide = input.closest('.short-slide');
+    const video = slide.querySelector('video');
+    
+    if (video && video.duration) {
+        const time = (input.value / 100) * video.duration;
+        video.currentTime = time;
+    }
 }
 
 // ভিডিওতে ক্লিক করলে প্লে/পজ

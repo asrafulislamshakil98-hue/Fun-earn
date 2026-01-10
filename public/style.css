@@ -2120,3 +2120,37 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
     object-fit: contain; /* ভিডিও কেটে যাবে না */
     max-width: 500px;
 }
+
+/* --- শর্টস প্রোগ্রেস বার --- */
+.video-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    appearance: none; 
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.3);
+    outline: none;
+    z-index: 50; /* সবার উপরে থাকবে */
+    cursor: pointer;
+}
+
+/* স্লাইডারের কালার (লাল) */
+.video-progress::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: red;
+    cursor: pointer;
+}
+
+.video-progress::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: red;
+    cursor: pointer;
+}
