@@ -1,10 +1,20 @@
 // ==========================================
-// ১. ভেরিয়েবল এবং ইনিশিয়ালাইজেশন
+// ১. ভেরিয়েবল এবং ইনিশিয়ালাইজেশন (সংশোধিত)
 // ==========================================
 const socket = io();
 let currentUser = null;
 let token = localStorage.getItem('token');
 let currentChatFriend = null;
+
+// পেজ লোড হলে চেক করা
+if (token) {
+    currentUser = localStorage.getItem('username');
+    
+    // 👇 এই অংশটি আপডেট করা হয়েছে
+    window.addEventListener('DOMContentLoaded', () => {
+        showApp(); // অ্যাপ দেখাবে
+    });
+}
 
 // ================= অথেনটিকেশন (সরাসরি - OTP ছাড়া) =================
 
@@ -139,28 +149,54 @@ async function login() {
 
 // --- script.js এর showApp ফাংশন (সম্পূর্ণ ফিক্সড) ---
 function showApp() {
-    console.log("App Starting..."); // চেক করার জন্য
     document.getElementById('auth-section').style.display = 'none';
     document.getElementById('app-section').style.display = 'block';
     
-    // ছবি ও নাম সেট করা
-    const storedPic = localStorage.getItem('profilePic') || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-    const imagesToUpdate = ['nav-profile-img', 'bottom-profile-img', 'menu-user-img', 'dashboard-pic', 'modal-user-pic'];
+    // ১. লোকাল স্টোরেজ থেকে ছবি নেওয়া
+    const defaultPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+    let storedPic = localStorage.getItem('profilePic');
+    
+    // যদি ছবি না থাকে
+    if (!storedPic || storedPic === "undefined" || storedPic === "") {
+        storedPic = defaultPic;
+    }
+
+    // ২. সব জায়গায় ছবি বসানো (মেনু, বটম বার, ড্যাশবোর্ড)
+    const imagesToUpdate = [
+        'bottom-profile-img',  // নিচের বারের ছবি
+        'menu-user-img',       // মেনুর ছবি
+        'dashboard-pic',       // পোস্ট করার বক্সের ছবি
+        'modal-user-pic',      // পোস্ট মোডালের ছবি
+        'nav-profile-img'      // উপরের বারের ছবি (যদি থাকে)
+    ];
 
     imagesToUpdate.forEach(id => {
         const img = document.getElementById(id);
-        if (img) img.src = storedPic;
+        if (img) {
+            img.src = storedPic;
+            
+            // ছবি ভাঙলে ডিফল্ট দেখাবে
+            img.onerror = function() { 
+                this.src = defaultPic; 
+                this.onerror = null;
+            };
+        }
     });
 
+    // ৩. নাম আপডেট করা
     const menuName = document.getElementById('menu-user-name');
     if(menuName) menuName.innerText = currentUser;
+    
+    const modalName = document.getElementById('modal-user-name');
+    if(modalName) modalName.innerText = currentUser;
 
-    // 👇 মেইন কাজ: পোস্ট এবং ব্যালেন্স লোড করা
-    // এখানে আমরা একটু সময় দিচ্ছি যাতে HTML রেন্ডার হতে পারে
-    setTimeout(() => {
-        loadPosts();
-        if (typeof updateNavBalance === 'function') updateNavBalance();
-    }, 100);
+    // ৪. পোস্ট এবং ব্যালেন্স লোড
+     if (typeof loadPosts === 'function') {
+        loadPosts(); 
+    }
+    if (typeof updateNavBalance === 'function') {
+        updateNavBalance();
+    }
 }
 
 // নিচের বারের ট্যাব কালার হ্যান্ডেলিং
@@ -183,56 +219,46 @@ function setActiveBottomTab(index) {
 
 // --- হোম পেজ (স্বাভাবিক পোস্ট) ---
 async function loadPosts() {
-    console.log("Loading Posts..."); // কনসোলে দেখব কল হচ্ছে কিনা
+    const topBar = document.getElementById('top-shorts-bar');
+    if (topBar) topBar.style.display = 'flex';
     
-    // ট্যাব ঠিক করা
-    if(typeof setActiveBottomTab === 'function') setActiveBottomTab(2);
-
+    // 👇 শর্টস লোড করা (যদি ফাংশনটি থাকে)
+    if(typeof loadTopShorts === 'function') loadTopShorts();
+    setActiveBottomTab(2); // Home index
+    
     const feed = document.getElementById('feed');
-    if(!feed) return; 
-
-    // লোডিং দেখানো
-    feed.innerHTML = '<div style="text-align:center; padding:50px; color:gray;"><h3>🔄 লোডিং...</h3></div>';
+    feed.innerHTML = '<div style="text-align:center; padding:20px;">পোস্ট লোড হচ্ছে...</div>';
 
     try {
-        const res = await fetch('/posts');
+        const [postRes, userRes] = await Promise.all([ fetch('/posts'), fetch('/users') ]);
+        const posts = await postRes.json();
+        const allUsers = await userRes.json();
         
-        // যদি রেসপন্স ঠিক না থাকে
-        if (!res.ok) throw new Error("Server Error");
+        // আমার ফলোয়িং লিস্ট (ফলো বাটন চেক করার জন্য)
+        const me = allUsers.find(u => u.username === currentUser);
+        const myFollowing = me ? (me.following || []) : [];
+        const blockedList = me.blockedUsers || []; // ব্লক করা তালিকা
 
-        const posts = await res.json();
-        
-        feed.innerHTML = ''; // লোডিং সরানো
+        feed.innerHTML = ''; 
 
-        // ফিল্টার
-        const normalPosts = posts.filter(p => p.isShort !== true);
+        // শুধু সাধারণ পোস্ট ফিল্টার (Shorts বাদে)
+        const normalPosts = posts.filter(p => p.isShort !== true && !blockedList.includes(p.username));
 
         if (normalPosts.length === 0) {
             feed.innerHTML = '<div class="card" style="padding:20px; text-align:center;">কোনো পোস্ট নেই।</div>';
             return;
         }
 
-        // ইউজার ডাটা আনা (Follow চেক করার জন্য)
-        const userRes = await fetch('/users');
-        const allUsers = await userRes.json();
-        const me = allUsers.find(u => u.username === currentUser);
-        const myFollowing = me ? (me.following || []) : [];
-
-        // পোস্ট দেখানো
         normalPosts.forEach(post => {
             const isFollowing = myFollowing.includes(post.username);
             createPostElement(post, feed, isFollowing);
         });
 
     } catch (err) {
-        console.log("Load Error:", err);
-        // এরর হলে ইউজারকে জানানো
-        feed.innerHTML = `
-            <div style="text-align:center; padding:20px; color:red;">
-                <h3>ডাটা লোড হতে সমস্যা হয়েছে!</h3>
-                <button onclick="loadPosts()" style="padding:10px; margin-top:10px;">আবার চেষ্টা করুন</button>
-            </div>`;
+        console.log(err);
+        feed.innerHTML = '<p style="color:red; text-align:center;">সার্ভার সমস্যা!</p>';
     }
+    loadTopShorts(); 
 }
 
 // --- ভিডিও ফিল্টার ফাংশন (Follow Status Fix) ---
@@ -3921,24 +3947,3 @@ async function submitModalReply(postId, commentId) {
 
     openPostComments(postId); // রিফ্রেশ
 }
-
-// ==========================================
-// 🚀 অ্যাপ স্টার্টার (সবার শেষে থাকবে)
-// ==========================================
-
-document.addEventListener('DOMContentLoaded', () => {
-    // টোকেন চেক
-    const savedToken = localStorage.getItem('token');
-    
-    if (savedToken) {
-        // লগিন করা থাকলে
-        currentUser = localStorage.getItem('username');
-        console.log("User found:", currentUser);
-        showApp();
-    } else {
-        // লগিন না থাকলে
-        console.log("No user found, showing login.");
-        document.getElementById('auth-section').style.display = 'flex';
-        document.getElementById('app-section').style.display = 'none';
-    }
-});
