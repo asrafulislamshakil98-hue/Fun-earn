@@ -660,9 +660,13 @@ async function toggleNotifications() {
 // ৫. শর্টস (Shorts/Reels)
 // ==========================================
 
-// --- ১. শর্টস গ্রিড ভিউ (ফিক্সড) ---
+// ==========================================
+// ⚡ শর্টস লজিক (Grid & Full Screen)
+// ==========================================
+
+// ১. শর্টস গ্রিড ভিউ
 async function filterShorts() {
-    // ট্যাব স্টাইল ঠিক করা
+    console.log("Shorts Tab Clicked!");
     document.querySelectorAll('.b-nav-item').forEach(el => el.classList.remove('active-tab'));
     const navItems = document.querySelectorAll('.b-nav-item');
     if(navItems[3]) navItems[3].classList.add('active-tab'); 
@@ -678,7 +682,6 @@ async function filterShorts() {
         const me = allUsers.find(u => u.username === currentUser);
         const myFollowing = me ? (me.following || []) : [];
 
-        // শুধু শর্ট ভিডিও ফিল্টার
         const shorts = posts.filter(p => p.isShort === true);
 
         if (shorts.length === 0) {
@@ -695,17 +698,16 @@ async function filterShorts() {
                 followBtnHtml = `<button class="shorts-follow-btn" onclick="event.stopPropagation(); toggleConnection('${post.username}', 'connect')">Follow</button>`;
             }
 
-            // কয়েন/লাইক বাটন লজিক
+            // কয়েন বাটন লজিক
             const hasCoined = post.coinedBy && post.coinedBy.includes(currentUser);
             const coinColor = hasCoined ? '#fbc02d' : 'white';
             const coinAction = hasCoined ? '' : `giveCoin('${post._id}')`;
 
-            // 👇 এই লাইনটি সবচেয়ে গুরুত্বপূর্ণ: onclick="openFullShorts(...)"
+            // 👇 onclick="openFullShorts(...)" এখানে ঠিক করা হয়েছে
             html += `
                 <div class="shorts-grid-card" onclick="openFullShorts('${post._id}')">
                     <video src="${post.mediaUrl}" loop muted onmouseover="this.play()" onmouseout="this.pause()"></video>
                     
-                    <!-- অ্যাকশন বার -->
                     <div class="shorts-action-bar">
                         <div style="text-align:center;">
                             <button id="short-coin-btn-${post._id}" class="shorts-btn" onclick="event.stopPropagation(); ${coinAction}" style="color:${coinColor}">
@@ -713,24 +715,11 @@ async function filterShorts() {
                             </button>
                             <span id="short-coin-count-${post._id}" class="shorts-count">${post.coins || 0}</span>
                         </div>
-                        <div style="text-align:center;">
-                            <button class="shorts-btn" onclick="event.stopPropagation(); openShortsComments('${post._id}')">
-                                <i class="fas fa-comment-dots"></i>
-                            </button>
-                            <span class="shorts-count">${post.comments ? post.comments.length : 0}</span>
-                        </div>
-                        <div style="text-align:center;">
-                            <button class="shorts-btn" onclick="event.stopPropagation(); sharePost('${post.mediaUrl}')">
-                                <i class="fas fa-share"></i>
-                            </button>
-                            <span class="shorts-count">Share</span>
-                        </div>
                     </div>
 
-                    <!-- ইনফো -->
                     <div class="shorts-info-overlay">
                         <div style="display:flex; align-items:center; gap:5px;">
-                            <h4 style="margin:0; text-shadow: 1px 1px 2px black;">@${post.username}</h4>
+                            <h4 style="margin:0;">@${post.username}</h4>
                             ${followBtnHtml}
                         </div>
                         <p class="shorts-caption">${post.caption || ''}</p>
@@ -747,24 +736,21 @@ async function filterShorts() {
     }
 }
 
-// ==========================================
-// 🎬 ফুল স্ক্রিন শর্টস প্লেয়ার লজিক
-// ==========================================
-
-// ১. ফুল স্ক্রিন শর্টস ওপেন করা
+// ২. ফুল স্ক্রিন শর্টস প্লেয়ার
 async function openFullShorts(postId) {
+    console.log("Opening Short ID:", postId);
     const modal = document.getElementById('full-shorts-modal');
     const video = document.getElementById('full-short-video');
     const container = document.querySelector('.full-shorts-container');
+
+    // সেফটি চেক
+    if (!video || !modal) return alert("ভিডিও প্লেয়ার লোড হয়নি! পেজ রিফ্রেশ দিন।");
+
     const progressBar = document.getElementById('shorts-progress-bar');
     const timerDisplay = document.getElementById('video-timer');
     const playIcon = document.getElementById('play-pause-icon');
 
-    // সেফটি চেক
-    if (!video || !modal) return console.error("HTML এলিমেন্ট পাওয়া যায়নি!");
-
     try {
-        // ডাটা আনা
         const [postRes, userRes] = await Promise.all([ fetch('/posts'), fetch('/users') ]);
         const posts = await postRes.json();
         const allUsers = await userRes.json();
@@ -777,40 +763,31 @@ async function openFullShorts(postId) {
         const owner = allUsers.find(u => u.username === post.username);
         const ownerPic = owner ? owner.profilePic : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
 
-        // --- ভিডিও সেটআপ ---
+        // ভিডিও সোর্স
         video.src = post.mediaUrl;
         
-        // টাইমার এবং প্রোগ্রেস বার আপডেট
+        // টাইমার আপডেট
         video.ontimeupdate = function() {
             if (video.duration && !isNaN(video.duration)) {
-                // স্লাইডার আপডেট
-                const percent = (video.currentTime / video.duration) * 100;
-                if(progressBar) progressBar.value = percent;
+                if(progressBar) progressBar.value = (video.currentTime / video.duration) * 100;
                 
-                // সময় টেক্সট আপডেট
                 const current = formatTime(video.currentTime);
                 const total = formatTime(video.duration);
                 if(timerDisplay) timerDisplay.innerText = `${current} / ${total}`;
             }
         };
 
-        // রিসেট করা
+        // রিসেট
         if(progressBar) progressBar.value = 0;
         if(timerDisplay) timerDisplay.innerText = "00:00 / 00:00";
         if(playIcon) playIcon.style.display = 'none';
 
-        // --- প্রোফাইল ও টেক্সট ---
-        const profilePic = document.getElementById('full-short-profile-pic');
-        profilePic.src = ownerPic;
-        profilePic.onclick = function() { closeFullShorts(); viewUserProfile(post.username); };
-        
-        const nameEl = document.getElementById('full-short-username');
-        nameEl.innerText = `@${post.username}`;
-        nameEl.onclick = function() { closeFullShorts(); viewUserProfile(post.username); };
-        
+        // ডাটা সেট করা
+        document.getElementById('full-short-profile-pic').src = ownerPic;
+        document.getElementById('full-short-username').innerText = `@${post.username}`;
         document.getElementById('full-short-caption').innerText = post.caption || '';
-
-        // --- ফলো বাটন (+5 কয়েন সহ) ---
+        
+        // ফলো বাটন
         const followContainer = document.getElementById('full-short-follow-btn');
         if (followContainer) {
             if (post.username === currentUser) {
@@ -818,20 +795,20 @@ async function openFullShorts(postId) {
             } else if (myFollowing.includes(post.username)) {
                 followContainer.innerHTML = `<button class="short-follow-btn following" onclick="toggleConnection('${post.username}', 'unconnect'); closeFullShorts();">Following</button>`;
             } else {
-                followContainer.innerHTML = `<button class="short-follow-btn" onclick="toggleConnection('${post.username}', 'connect'); closeFullShorts();">Follow <span style="color:#e65100;">+5🪙</span></button>`;
+                followContainer.innerHTML = `<button class="short-follow-btn" onclick="toggleConnection('${post.username}', 'connect'); closeFullShorts();">Follow</button>`;
             }
         }
 
-        // --- লাইক ও কমেন্ট বাটন ---
+        // লাইক বাটন
         const coinAction = post.coinedBy && post.coinedBy.includes(currentUser) ? '' : `giveCoin('${post._id}')`;
         const coinColor = post.coinedBy && post.coinedBy.includes(currentUser) ? '#fbc02d' : 'white';
+        document.getElementById('full-short-like-btn').innerHTML = `<div onclick="${coinAction}" style="color:${coinColor}"><i class="fas fa-coins"></i></div><span>${post.coins || 0}</span>`;
         
-        document.getElementById('full-short-like-btn').innerHTML = `<div onclick="${coinAction}" style="color:${coinColor}; cursor:pointer;"><i class="fas fa-coins"></i></div><span>${post.coins || 0}</span>`;
-        document.getElementById('full-short-comment-btn').innerHTML = `<div onclick="openShortsComments('${post._id}')" style="cursor:pointer;"><i class="fas fa-comment-dots"></i></div><span>${post.comments ? post.comments.length : 0}</span>`;
+        document.getElementById('full-short-comment-btn').innerHTML = `<div onclick="openShortsComments('${post._id}')"><i class="fas fa-comment-dots"></i></div><span>${post.comments ? post.comments.length : 0}</span>`;
 
-        // --- টপ মেনু (Download & Delete) ---
+        // টপ মেনু (Download/Delete)
         const oldMenu = document.querySelector('.shorts-top-right');
-        if(oldMenu) oldMenu.remove(); // আগেরটা থাকলে মুছে ফেলবে
+        if(oldMenu) oldMenu.remove();
 
         const deleteOption = post.username === currentUser 
             ? `<div class="s-menu-item" onclick="deletePost('${post._id}')" style="color:red;"><i class="fas fa-trash"></i> Delete</div>` 
@@ -850,16 +827,13 @@ async function openFullShorts(postId) {
         `;
         container.insertAdjacentHTML('beforeend', menuHTML);
 
-        // --- মোডাল ওপেন ---
+        // মোডাল ওপেন
         modal.style.display = 'block';
-        
-        // ভিডিও প্লে এবং রিওয়ার্ড
-        video.play().catch(e => console.log("Autoplay blocked"));
-        claimWatchReward(postId); // দেখার সাথে সাথে কয়েন পাবে
+        video.play().catch(e => {});
+        claimWatchReward(postId);
 
     } catch(err) { console.log(err); }
 }
-
 // ২. ভিডিও প্লে/পজ কন্ট্রোল
 function toggleShortsPlay() {
     const video = document.getElementById('full-short-video');
@@ -904,7 +878,6 @@ function closeFullShorts() {
     // পেজ রিফ্রেশ করে বাটন স্ট্যাটাস আপডেট রাখা
     filterShorts();
 }
-
 // ==========================================
 // ৬. নেটওয়ার্ক জোন (Friends/Follow)
 // ==========================================
