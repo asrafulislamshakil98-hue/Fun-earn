@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (authSection) authSection.style.display = 'flex';
         if (appSection) appSection.style.display = 'none';
+
+        document.getElementById('top-navbar').style.display = 'none';
+        document.getElementById('bottom-navbar').style.display = 'none';
     }
 
 });
@@ -36,6 +39,8 @@ function showApp() {
     if (authSection) authSection.style.display = 'none';
     if (appSection) appSection.style.display = 'block';
     
+    document.getElementById('top-navbar').style.display = 'flex';
+    document.getElementById('bottom-navbar').style.display = 'flex';
     // ছবি এবং নাম সেট করা
     const storedPic = localStorage.getItem('profilePic');
     const defaultPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
