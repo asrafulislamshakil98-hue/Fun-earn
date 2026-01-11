@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // ২. মেইন অ্যাপ কন্ট্রোল (Null Error ফিক্সড)
 // ==========================================
+
+// --- অ্যাপ ওপেন করার মেইন ফাংশন (PeerJS সহ) ---
 function showApp() {
     const authSection = document.getElementById('auth-section');
     const appSection = document.getElementById('app-section');
@@ -4064,38 +4066,99 @@ let callRingtone = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e
 
 let currentCallType = 'video'; // ডিফল্ট
 
-// ১. কল শুরু করা (Caller)
+// --- ১. কল শুরু করা (Caller) - Socket + PeerJS ---
 async function startCall(type) {
     if (!currentChatFriend) return alert("চ্যাট ওপেন করুন!");
     
-    // ১. নিজের ক্যামেরা অন করা
+    // টাইপ গ্লোবালি সেভ রাখা (ভিডিও/অডিও লজিকের জন্য)
+    currentCallType = type; 
+
+    // চ্যাট বক্সে মেসেজ দেখানো
+    const icon = type === 'video' ? '📹' : '📞';
+    appendMessage(`${icon} Calling ${currentChatFriend}...`, 'my-msg');
+
+    // ১. নিজের ক্যামেরা/মাইক চালু করা
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: (type === 'video'), 
-            audio: true 
-        });
-        
-        document.getElementById('video-call-screen').style.display = 'block';
-        document.getElementById('local-video').srcObject = stream;
-        localStream = stream;
+        const constraints = {
+            audio: true,
+            video: (type === 'video') // ভিডিও হলে ট্রু, অডিও হলে ফলস
+        };
 
-        // ২. বন্ধুকে কল করা (PeerJS দিয়ে)
-        const call = myPeer.call(currentChatFriend, stream);
-        
-        // ৩. তার ভিডিও রিসিভ করা (যখন সে রিসিভ করবে)
-        call.on('stream', (remoteStream) => {
-            document.getElementById('remote-video').srcObject = remoteStream;
-        });
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        localStream = stream; // স্ট্রীম সেভ রাখা
 
-        // ৪. নোটিফিকেশন পাঠানো (Socket দিয়ে, যাতে সে অনলাইনে না থাকলেও জানে)
+        // ভিডিও স্ক্রিন ওপেন করা
+        const screen = document.getElementById('video-call-screen');
+        screen.style.display = 'block';
+
+        const localVid = document.getElementById('local-video');
+        const remoteVid = document.getElementById('remote-video');
+
+        // অডিও কল হলে স্ক্রিন কালো, ভিডিও হলে ক্যামেরা অন
+        if (type === 'audio') {
+            localVid.style.display = 'none';
+            remoteVid.style.display = 'none';
+            screen.style.background = '#222';
+            screen.innerHTML += `<div id="audio-call-ui" style="position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); color:white; text-align:center;">
+                                    <h3>Calling...</h3>
+                                 </div>`;
+        } else {
+            // ভিডিও হলে ক্যামেরা ফিড দেখানো
+            localVid.style.display = 'block';
+            remoteVid.style.display = 'block';
+            localVid.srcObject = stream;
+            
+            // আগের অডিও UI থাকলে মুছে ফেলা
+            const oldUI = document.getElementById('audio-call-ui');
+            if(oldUI) oldUI.remove();
+        }
+
+        // ২. PeerJS দিয়ে কল করা
+        if (window.myPeer) {
+            const call = window.myPeer.call(currentChatFriend, stream);
+            window.currentCall = call; // কল সেভ রাখা
+
+            // ৩. অপর পাশের ভিডিও/অডিও রিসিভ করা
+            call.on('stream', (remoteStream) => {
+                const remoteVideoElement = document.getElementById('remote-video');
+                remoteVideoElement.srcObject = remoteStream;
+                
+                // অডিও কল হলে শুধু সাউন্ড আসবে, ভিডিও দেখাবে না
+                if (type === 'audio') {
+                    const audioMsg = document.querySelector('#audio-call-ui h3');
+                    if(audioMsg) audioMsg.innerText = "Connected";
+                }
+            });
+
+            // কল শেষ হলে
+            call.on('close', () => {
+                endCall();
+            });
+            
+            call.on('error', (err) => {
+                console.log("Call Error:", err);
+                alert("কল কানেক্ট করা যাচ্ছে না!");
+                endCall();
+            });
+        } else {
+            console.log("PeerJS not ready!");
+        }
+
+        // ৪. নোটিফিকেশন পাঠানো (Socket দিয়ে)
+        // এটি রিসিভারকে পপ-আপ দেখাবে এবং রিংটোন বাজাবে
         socket.emit('call_user', {
             sender: currentUser,
             receiver: currentChatFriend,
             type: type
         });
 
+        // নিজের দিকে রিংটোন বাজানো (অপশনাল)
+        // callRingtone.loop = true;
+        // callRingtone.play().catch(e=>{});
+
     } catch (err) {
-        alert("ক্যামেরা/মাইক সমস্যা!");
+        console.log(err);
+        alert("ক্যামেরা বা মাইক্রোফোন চালু করা যাচ্ছে না! পারমিশন দিন।");
     }
 }
 
@@ -4118,34 +4181,77 @@ socket.on('incoming_call', (data) => {
     }
 });
 
-// ৩. কল এক্সেপ্ট করা
+// --- ৩. কল এক্সেপ্ট করা (Socket + PeerJS) ---
 async function acceptCall() {
-    callRingtone.pause();
+    // ১. রিংটোন বন্ধ করা
+    if(typeof callRingtone !== 'undefined') {
+        callRingtone.pause();
+        callRingtone.currentTime = 0;
+    }
+    
+    // মোডাল বন্ধ করা
     document.getElementById('incoming-call-modal').style.display = 'none';
+    
+    // ২. সার্ভারে জানানো (যাতে অপরপক্ষ জানে আপনি রিসিভ করেছেন)
+    if(typeof socket !== 'undefined') {
+        socket.emit('answer_call', { sender: currentUser, receiver: window.incomingCaller });
+    }
 
-    // ১. নিজের ক্যামেরা/মাইক অন করা
+    // ৩. ক্যামেরা এবং ভিডিও স্ক্রিন চালু করা
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        
-        // নিজের ভিডিও দেখানো
-        document.getElementById('video-call-screen').style.display = 'block';
-        document.getElementById('local-video').srcObject = stream;
-        localStream = stream;
+        // অডিও/ভিডিও পারমিশন নেওয়া
+        // (এখানে currentCallType চেক করা হচ্ছে, যদি অডিও হয় তবে video: false)
+        const constraints = {
+            audio: true,
+            video: (typeof currentCallType !== 'undefined' && currentCallType === 'video')
+        };
 
-        // ২. কলের উত্তর দেওয়া (ভিডিও স্ট্রিম সহ)
-        if(window.currentCall) {
-            window.currentCall.answer(stream);
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        localStream = stream; // গ্লোবাল ভেরিয়েবলে রাখা
+
+        // ভিডিও স্ক্রিন দেখানো
+        const screen = document.getElementById('video-call-screen');
+        screen.style.display = 'block';
+
+        // নিজের ভিডিও দেখানো (যদি ভিডিও কল হয়)
+        const localVid = document.getElementById('local-video');
+        if (constraints.video) {
+            localVid.srcObject = stream;
+            localVid.style.display = 'block';
+        } else {
+            localVid.style.display = 'none'; // অডিও হলে নিজের ভিডিও অফ
+            screen.style.background = '#222'; // কালো ব্যাকগ্রাউন্ড
+        }
+
+        // ৪. PeerJS দিয়ে কলের উত্তর দেওয়া (স্ট্রিম পাঠানো)
+        if (window.currentCall) {
+            window.currentCall.answer(stream); // আমার স্ট্রিম পাঠানো হলো
             
-            // ৩. অপর পাশের ভিডিও রিসিভ করা
+            // ৫. অপর পাশের স্ট্রিম রিসিভ করা
             window.currentCall.on('stream', (remoteStream) => {
-                document.getElementById('remote-video').srcObject = remoteStream;
+                const remoteVid = document.getElementById('remote-video');
+                remoteVid.srcObject = remoteStream;
+                
+                // অডিও হলে রিমোট ভিডিও হাইড, কিন্তু অডিও চলবে
+                if (!constraints.video) {
+                    remoteVid.style.display = 'none';
+                } else {
+                    remoteVid.style.display = 'block';
+                }
+            });
+            
+            // কল কেটে দিলে হ্যান্ডেল করা
+            window.currentCall.on('close', () => {
+                endCall();
             });
         }
+
     } catch (err) {
-        alert("ক্যামেরা এক্সেস পাওয়া যায়নি!");
+        console.log(err);
+        alert("ক্যামেরা বা মাইক্রোফোন চালু করা যাচ্ছে না!");
+        endCall();
     }
 }
-
 // ৪. কল রিজেক্ট করা
 function rejectCall() {
     callRingtone.pause();
