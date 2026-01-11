@@ -154,6 +154,24 @@ io.on('connection', (socket) => {
     socket.on('send_live_comment', (data) => {
         io.to(data.room).emit('receive_live_comment', data);
     });
+
+    // ১. কল রিকোয়েস্ট পাঠানো
+    socket.on('call_user', (data) => {
+       // data = { sender, receiver, type }
+       // আমরা রিসিভারের কাছে 'incoming_call' পাঠাচ্ছি
+       // রিয়েল অ্যাপে socket.to(socketId) ব্যবহার করা হয়, এখানে আমরা broadcast করছি এবং ক্লায়েন্টে ফিল্টার করছি
+       io.emit('incoming_call', data);
+    });
+
+    // ২. কল রিসিভ করা (Answer)
+    socket.on('answer_call', (data) => {
+        io.emit('call_accepted', data);
+    });
+
+    // ৩. কল কেটে দেওয়া
+    socket.on('end_call', (data) => {
+       io.emit('call_ended', data);
+    });
 });
 
 // ==========================================

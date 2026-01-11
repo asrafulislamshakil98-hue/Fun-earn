@@ -4020,3 +4020,122 @@ async function submitModalReply(postId, commentId) {
 
     openPostComments(postId); // রিফ্রেশ
 }
+
+// ================= ভিডিও/অডিও কলিং সিস্টেম =================
+
+let localStream;
+let callRingtone = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e9/Ringtone_%283%29.ogg');
+
+// ১. কল শুরু করা (Caller)
+function startCall(type) {
+    if (!currentChatFriend) return alert("চ্যাট ওপেন করুন!");
+
+    const callType = type === 'video' ? 'Video' : 'Audio';
+    
+    // নিজের স্ক্রিনে কলিং দেখানো (মেসেজ বক্সে)
+    appendMessage(`📞 Calling ${currentChatFriend}...`, 'my-msg');
+
+    // সার্ভারে সিগন্যাল পাঠানো
+    socket.emit('call_user', {
+        sender: currentUser,
+        receiver: currentChatFriend,
+        type: callType
+    });
+
+    // কলিং সাউন্ড
+    callRingtone.loop = true;
+    callRingtone.play().catch(e=>{});
+}
+
+// ২. ইনকামিং কল রিসিভ করা (Receiver)
+socket.on('incoming_call', (data) => {
+    // যদি কলটি আমার জন্য হয়
+    if (data.receiver === currentUser) {
+        const modal = document.getElementById('incoming-call-modal');
+        
+        document.getElementById('caller-name').innerText = data.sender;
+        document.getElementById('call-type-text').innerText = `Incoming ${data.type} Call...`;
+        // ইউজারের ছবি লোড করা (আপনার কাছে allUsers থাকলে সেখান থেকে নেবেন, এখানে ডিফল্ট দিচ্ছি)
+        document.getElementById('caller-img').src = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+
+        modal.style.display = 'flex';
+        
+        // রিংটোন বাজানো
+        callRingtone.loop = true;
+        callRingtone.play().catch(e=>{});
+
+        // কলারের নাম সেভ রাখা
+        window.incomingCaller = data.sender;
+    }
+});
+
+// ৩. কল এক্সেপ্ট করা
+async function acceptCall() {
+    callRingtone.pause();
+    callRingtone.currentTime = 0;
+    
+    document.getElementById('incoming-call-modal').style.display = 'none';
+    
+    // সার্ভারে জানানো যে এক্সেপ্ট হয়েছে
+    socket.emit('answer_call', { sender: currentUser, receiver: window.incomingCaller });
+
+    // ভিডিও স্ক্রিন ওপেন এবং ক্যামেরা চালু
+    openVideoScreen();
+}
+
+// ৪. কল রিজেক্ট করা
+function rejectCall() {
+    callRingtone.pause();
+    callRingtone.currentTime = 0;
+    document.getElementById('incoming-call-modal').style.display = 'none';
+    
+    // সার্ভারে জানানো
+    socket.emit('end_call', { sender: currentUser, receiver: window.incomingCaller });
+}
+
+// ৫. কল এক্সেপ্টেড হলে (Caller এর কাছে)
+socket.on('call_accepted', (data) => {
+    if (data.receiver === currentUser) {
+        callRingtone.pause();
+        // ভিডিও স্ক্রিন ওপেন
+        openVideoScreen();
+    }
+});
+
+// ৬. কল কেটে দিলে
+socket.on('call_ended', (data) => {
+    if (data.receiver === currentUser || data.sender === currentUser) {
+        alert("Call Ended");
+        endCall();
+    }
+});
+
+// ৭. ক্যামেরা চালু এবং ভিডিও স্ক্রিন
+async function openVideoScreen() {
+    document.getElementById('video-call-screen').style.display = 'block';
+    
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('local-video').srcObject = localStream;
+        
+        // নোট: রিয়েল ভিডিও শেয়ার করার জন্য WebRTC Peer Connection লাগে।
+        // এখানে আমরা শুধু নিজের ক্যামেরা দেখাচ্ছি সিমুলেশনের জন্য।
+        // রিয়েল কানেকশনের জন্য PeerJS ব্যবহার করতে হবে।
+        
+        // ডেমো হিসেবে: রিমোট ভিডিওতেও নিজেরটা দেখাচ্ছি যাতে বোঝা যায় কাজ করছে
+        document.getElementById('remote-video').srcObject = localStream;
+
+    } catch (err) {
+        alert("ক্যামেরা এক্সেস পাওয়া যায়নি!");
+        endCall();
+    }
+}
+
+// ৮. কল শেষ করা
+function endCall() {
+    document.getElementById('video-call-screen').style.display = 'none';
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    callRingtone.pause();
+}
