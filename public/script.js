@@ -4026,45 +4026,44 @@ async function submitModalReply(postId, commentId) {
 let localStream;
 let callRingtone = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e9/Ringtone_%283%29.ogg');
 
+let currentCallType = 'video'; // ডিফল্ট
+
 // ১. কল শুরু করা (Caller)
 function startCall(type) {
     if (!currentChatFriend) return alert("চ্যাট ওপেন করুন!");
 
-    const callType = type === 'video' ? 'Video' : 'Audio';
+    currentCallType = type; // টাইপ সেভ রাখা (audio / video)
     
-    // নিজের স্ক্রিনে কলিং দেখানো (মেসেজ বক্সে)
-    appendMessage(`📞 Calling ${currentChatFriend}...`, 'my-msg');
+    // নিজের স্ক্রিনে মেসেজ
+    const icon = type === 'video' ? '📹' : '📞';
+    appendMessage(`${icon} Calling ${currentChatFriend}...`, 'my-msg');
 
-    // সার্ভারে সিগন্যাল পাঠানো
+    // সার্ভারে পাঠানো
     socket.emit('call_user', {
         sender: currentUser,
         receiver: currentChatFriend,
-        type: callType
+        type: type // 'audio' or 'video'
     });
 
-    // কলিং সাউন্ড
     callRingtone.loop = true;
     callRingtone.play().catch(e=>{});
 }
 
-// ২. ইনকামিং কল রিসিভ করা (Receiver)
+// ২. ইনকামিং কল রিসিভ করা
 socket.on('incoming_call', (data) => {
-    // যদি কলটি আমার জন্য হয়
     if (data.receiver === currentUser) {
+        // টাইপ সেভ করা (যাতে রিসিভ করলে সঠিক মোড অন হয়)
+        currentCallType = data.type; 
+        
         const modal = document.getElementById('incoming-call-modal');
-        
         document.getElementById('caller-name').innerText = data.sender;
-        document.getElementById('call-type-text').innerText = `Incoming ${data.type} Call...`;
-        // ইউজারের ছবি লোড করা (আপনার কাছে allUsers থাকলে সেখান থেকে নেবেন, এখানে ডিফল্ট দিচ্ছি)
-        document.getElementById('caller-img').src = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-
-        modal.style.display = 'flex';
         
-        // রিংটোন বাজানো
-        callRingtone.loop = true;
+        // আইকন এবং টেক্সট ঠিক করা
+        const icon = data.type === 'video' ? '📹' : '📞';
+        document.getElementById('call-type-text').innerText = `Incoming ${data.type.toUpperCase()} Call... ${icon}`;
+        
+        modal.style.display = 'flex';
         callRingtone.play().catch(e=>{});
-
-        // কলারের নাম সেভ রাখা
         window.incomingCaller = data.sender;
     }
 });
@@ -4110,23 +4109,49 @@ socket.on('call_ended', (data) => {
     }
 });
 
-// ৭. ক্যামেরা চালু এবং ভিডিও স্ক্রিন
+// ৭. ক্যামেরা/মাইক চালু করা (অডিও/ভিডিও লজিক সহ)
 async function openVideoScreen() {
-    document.getElementById('video-call-screen').style.display = 'block';
+    const screen = document.getElementById('video-call-screen');
+    const localVid = document.getElementById('local-video');
+    const remoteVid = document.getElementById('remote-video');
+
+    screen.style.display = 'block';
     
+    // অডিও কল হলে স্ক্রিন কালো বা প্রোফাইল ছবি দেখাবে
+    if (currentCallType === 'audio') {
+        remoteVid.style.display = 'none'; // ভিডিও ট্যাগ লুকানো
+        localVid.style.display = 'none';
+        
+        // অডিও কলের জন্য একটি আইকন বা ছবি দেখানো (HTML এ যোগ করতে পারেন)
+        // আপাতত ব্যাকগ্রাউন্ড কালোই থাকছে
+        screen.style.background = '#222'; 
+        screen.innerHTML += `<div style="position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); color:white; text-align:center;">
+                                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:100px; border-radius:50%; border:3px solid lime;">
+                                <h3>Audio Call Active</h3>
+                             </div>`;
+    } else {
+        // ভিডিও কল হলে ভিডিও ট্যাগ দেখাবে
+        remoteVid.style.display = 'block';
+        localVid.style.display = 'block';
+    }
+
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('local-video').srcObject = localStream;
+        // 👇 আসল লজিক: অডিও হলে video: false, ভিডিও হলে video: true
+        const constraints = {
+            audio: true,
+            video: currentCallType === 'video' 
+        };
+
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
         
-        // নোট: রিয়েল ভিডিও শেয়ার করার জন্য WebRTC Peer Connection লাগে।
-        // এখানে আমরা শুধু নিজের ক্যামেরা দেখাচ্ছি সিমুলেশনের জন্য।
-        // রিয়েল কানেকশনের জন্য PeerJS ব্যবহার করতে হবে।
-        
-        // ডেমো হিসেবে: রিমোট ভিডিওতেও নিজেরটা দেখাচ্ছি যাতে বোঝা যায় কাজ করছে
-        document.getElementById('remote-video').srcObject = localStream;
+        // ভিডিও হলে স্ট্রীম সেট করা
+        if (currentCallType === 'video') {
+            localVid.srcObject = localStream;
+            remoteVid.srcObject = localStream; // ডেমো হিসেবে নিজেরটাই দেখাচ্ছি
+        }
 
     } catch (err) {
-        alert("ক্যামেরা এক্সেস পাওয়া যায়নি!");
+        alert("মাইক্রোফোন বা ক্যামেরা পাওয়া যায়নি!");
         endCall();
     }
 }
