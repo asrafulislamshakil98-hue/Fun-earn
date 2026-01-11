@@ -820,11 +820,17 @@ function renderShortSlide(post, allUsers) {
     const coinAction = post.coinedBy && post.coinedBy.includes(currentUser) ? '' : `giveCoin('${post._id}')`;
     const coinColor = post.coinedBy && post.coinedBy.includes(currentUser) ? '#fbc02d' : 'white';
 
+    // 👇 ফলো বাটন লজিক (+5 কয়েন সহ)
     let followBtn = '';
-    if (post.username !== currentUser && !myFollowing.includes(post.username)) {
-        followBtn = `<button class="short-follow-btn" onclick="toggleConnection('${post.username}', 'connect')">Follow</button>`;
+    if (post.username !== currentUser) {
+        if (myFollowing.includes(post.username)) {
+            // যদি ফলো করা থাকে
+            followBtn = `<button class="short-follow-btn following" onclick="toggleConnection('${post.username}', 'unconnect')">Following</button>`;
+        } else {
+            // যদি ফলো করা না থাকে (+5 কয়েন দেখাবে)
+            followBtn = `<button class="short-follow-btn" onclick="toggleConnection('${post.username}', 'connect')">Follow <span style="color:#e65100;">+5🪙</span></button>`;
+        }
     }
-
     // HTML স্ট্রাকচার
     return `
     <div class="short-slide" id="slide-${post._id}">
@@ -881,7 +887,8 @@ function setupVideoObserver() {
 
             if (entry.isIntersecting) {
                 video.play();
-                
+                const postId = slide.id.replace('slide-', '');
+                claimWatchReward(postId);
                 // 👇 ভিডিও চলার সাথে বার আপডেট করা
                 video.ontimeupdate = function() {
                     if (video.duration) {
@@ -889,9 +896,6 @@ function setupVideoObserver() {
                         progressBar.value = percent;
                     }
                 };
-
-                // ওয়াচ রিওয়ার্ড
-                claimWatchReward(video.getAttribute('src')); 
 
             } else {
                 video.pause();
