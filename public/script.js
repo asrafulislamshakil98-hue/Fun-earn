@@ -254,7 +254,9 @@ async function loadPosts() {
 
         normalPosts.forEach(post => {
             const isFollowing = myFollowing.includes(post.username);
-            createPostElement(post, feed, isFollowing);
+            const author = allUsers.find(u => u.username === post.username);
+            const authorPic = author ? author.profilePic : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            createPostElement(post, feed, isFollowing, authorPic);
         });
 
     } catch (err) {
@@ -306,9 +308,10 @@ async function filterVideos() {
         videoPosts.forEach(post => {
             // চেক করা আমি ফলো করছি কিনা
             const isFollowing = myFollowing.includes(post.username);
-            
+            const author = allUsers.find(u => u.username === post.username);
+            const authorPic = author ? author.profilePic : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
             // পোস্ট তৈরি করা (সঠিক ফলো স্ট্যাটাস সহ)
-            createPostElement(post, feed, isFollowing);
+            createPostElement(post, feed, isFollowing, authorPic);
         });
 
     } catch(err) {
@@ -318,7 +321,7 @@ async function filterVideos() {
 }
 
 // --- পোস্ট তৈরি করার মেইন ফাংশন (সব ফিচার + ফিক্সড) ---
-function createPostElement(post, feed, isFollowing) {
+function createPostElement(post, feed, isFollowing, authorPic) {
     // ১. প্রাইভেসি চেক (Only Me হলে এবং আমি মালিক না হলে দেখাবে না)
     if (post.privacy === 'private' && post.username !== currentUser) return;
 
@@ -350,7 +353,7 @@ function createPostElement(post, feed, isFollowing) {
     }
 
     // ৪. ইউজার ছবি (ডিফল্ট)
-    const userPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"; 
+    const finalUserPic = authorPic || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
 
     // ৫. ফলো বাটন লজিক
     let followBtnHtml = '';
@@ -396,10 +399,10 @@ function createPostElement(post, feed, isFollowing) {
         <div class="post-header" style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
             
             <!-- 👇 onerror যুক্ত করা হয়েছে (ছবি ভাঙলে ডিফল্ট দেখাবে) -->
-            <img src="${userPic}" 
+            <img src="${finalUserPic}" 
                  class="post-avatar" 
                  onclick="viewUserProfile('${post.username}')" 
-                 onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+                 onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'"
                  style="width:40px; height:40px; border-radius:50%; cursor:pointer; object-fit:cover; border:1px solid #ddd;">
             
             <div style="flex:1;">
@@ -695,11 +698,6 @@ async function toggleNotifications() {
 // ==========================================
 // ৫. শর্টস (Shorts/Reels)
 // ==========================================
-
-// ==========================================
-// ⚡ শর্টস লজিক (Grid & Full Screen)
-// ==========================================
-
 // ১. শর্টস গ্রিড ভিউ
 async function filterShorts() {
     console.log("Shorts Tab Clicked!");
@@ -771,10 +769,6 @@ async function filterShorts() {
         feed.innerHTML = '<p style="color:red; text-align:center;">সমস্যা হয়েছে!</p>';
     }
 }
-
-// ==========================================
-// 🎬 TikTok স্টাইল শর্টস প্লেয়ার (Scrollable)
-// ==========================================
 
 // ১. শর্টস ওপেন করা
 async function openFullShorts(startPostId) {
