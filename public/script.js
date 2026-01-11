@@ -573,16 +573,46 @@ async function sharePost(mediaUrl) {
     }
 }
 
-// ১. সার্ভার থেকে আসা নতুন নোটিফিকেশন ধরা
+// ==========================================
+// 🔔 নোটিফিকেশন লিসেনার (Socket.io) - ফাইনাল ভার্সন
+// ==========================================
+
+// আগের কোনো লিসেনার থাকলে বন্ধ করা (ডুপ্লিকেট ফিক্স)
+socket.off('new_notification');
+
 socket.on('new_notification', (data) => {
-    // চেক করা: নোটিফিকেশনটি কি আমার জন্য? (অথবা সবার জন্য?)
+    // ১. চেক করা: নোটিফিকেশনটি কি আমার জন্য?
     if (data.receiver === currentUser || data.receiver === 'all') {
-        // নিজের কাজ হলে নোটিফিকেশন দেখাবে না (যেমন নিজের পোস্টে কমেন্ট)
+        
+        // নিজের অ্যাকশনের নোটিফিকেশন দরকার নেই
         if (data.sender === currentUser) return;
 
-        playNotificationSound(); // সাউন্ড (অপশনাল)
-        increaseBadgeCount();    // লাল সংখ্যা বাড়ানো
-        addNotificationToUI(data); // লিস্টে যোগ করা
+        console.log("New Notification:", data.message);
+
+        // ২. সাউন্ড বাজানো (যদি ফাংশনটি থাকে)
+        if (typeof playNotificationSound === 'function') {
+            playNotificationSound();
+        }
+
+        // ৩. ব্যাজ কাউন্ট বাড়ানো
+        const badge = document.querySelector('.nav-icon-btn .notification-badge');
+        if(badge) { 
+            let count = parseInt(badge.innerText) || 0;
+            badge.innerText = count + 1; 
+            badge.style.display = 'block'; 
+        }
+
+        // ৪. নোটিফিকেশন বক্সে সুন্দরভাবে যোগ করা
+        if (typeof addNotificationToUI === 'function') {
+            addNotificationToUI(data);
+        } else {
+            // যদি UI ফাংশন না থাকে (ব্যাকআপ)
+            const notifBox = document.getElementById('notification-box');
+            const div = document.createElement('div');
+            div.className = 'notif-item';
+            div.innerHTML = `<p>${data.message}</p>`;
+            notifBox.appendChild(div);
+        }
     }
 });
 
@@ -1977,20 +2007,6 @@ async function toggleSettingsMenu() {
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
-// --- Socket Listeners (Notification & Chat) ---
-socket.on('new_notification', (data) => {
-    if (data.receiver === currentUser || data.receiver === 'all') {
-        if (data.sender === currentUser) return;
-        const badge = document.querySelector('.nav-icon-btn .notification-badge');
-        if(badge) { badge.innerText = (parseInt(badge.innerText)||0) + 1; badge.style.display='block'; }
-        
-        // টোস্ট বা বক্সে যোগ করা
-        const notifBox = document.getElementById('notification-box');
-        const div = document.createElement('div');
-        div.innerHTML = `<p>${data.message}</p>`;
-        notifBox.appendChild(div);
-    }
-});
 
 // --- Following বা Followers লিস্ট দেখানোর ফাংশন ---
 async function showNetworkList(type) {
