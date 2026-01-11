@@ -5,7 +5,7 @@ const socket = io();
 let currentUser = null;
 let token = localStorage.getItem('token');
 let currentChatFriend = null;
-
+let myPeer = null; // পিয়ার কানেকশন
 // পেজ পুরোপুরি লোড হওয়ার পর কোড রান করবে
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -30,49 +30,85 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // ২. মেইন অ্যাপ কন্ট্রোল (Null Error ফিক্সড)
 // ==========================================
-
 function showApp() {
     const authSection = document.getElementById('auth-section');
     const appSection = document.getElementById('app-section');
 
-    // সেফটি চেক: যদি আইডি না পায়, তবে এরর দেবে না
     if (authSection) authSection.style.display = 'none';
     if (appSection) appSection.style.display = 'block';
     
+    // Navbar দেখানো
     document.getElementById('top-navbar').style.display = 'flex';
     document.getElementById('bottom-navbar').style.display = 'flex';
-    // ছবি এবং নাম সেট করা
+
+    // ১. ছবি এবং নাম সেট করা
     const storedPic = localStorage.getItem('profilePic');
     const defaultPic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-    
-    // যদি পুরনো ছবি 404 হয় বা না থাকে, তবে ডিফল্ট ব্যবহার করবে
     const finalPic = (storedPic && storedPic !== "undefined") ? storedPic : defaultPic;
 
-    // সব জায়গায় ছবি বসানো
     const imagesToUpdate = ['bottom-profile-img', 'menu-user-img', 'dashboard-pic', 'modal-user-pic', 'nav-profile-img'];
-    
     imagesToUpdate.forEach(id => {
         const img = document.getElementById(id);
         if (img) {
             img.src = finalPic;
-            // 👇 ৪-০-৪ এরর ফিক্স: ছবি না পেলে ডিফল্ট দেখাবে
-            img.onerror = function() {
-                this.src = defaultPic;
+            img.onerror = function() { 
+                this.src = defaultPic; 
                 this.onerror = null;
             };
         }
     });
 
-    // নাম সেট করা
     const menuName = document.getElementById('menu-user-name');
     if(menuName) menuName.innerText = currentUser;
-    
     const modalName = document.getElementById('modal-user-name');
     if(modalName) modalName.innerText = currentUser;
 
-    // ডাটা লোড
+    // ২. ডাটা লোড
     if (typeof loadPosts === 'function') loadPosts();
     if (typeof updateNavBalance === 'function') updateNavBalance();
+
+    // ৩. 👇 PeerJS (ভিডিও কল) সেটআপ (নতুন যোগ করা হয়েছে)
+    if (typeof Peer !== 'undefined') {
+        // আগের কোনো কানেকশন থাকলে বন্ধ করা (যাতে ডুপ্লিকেট না হয়)
+        if (window.myPeer) window.myPeer.destroy();
+
+        window.myPeer = new Peer(currentUser); // ইউজারের নাম দিয়েই আইডি হবে
+
+        window.myPeer.on('open', (id) => {
+            console.log("My Peer ID is:", id);
+        });
+
+        // কেউ কল করলে রিসিভ করার লজিক
+        window.myPeer.on('call', (call) => {
+            console.log("Incoming call from:", call.peer);
+            
+            const callerId = call.peer;
+            const modal = document.getElementById('incoming-call-modal');
+            
+            document.getElementById('caller-name').innerText = callerId;
+            document.getElementById('call-type-text').innerText = "Incoming Video Call...";
+            
+            // রিংটোন বাজানো
+            if(typeof callRingtone !== 'undefined') {
+                callRingtone.currentTime = 0;
+                callRingtone.play().catch(e=>{});
+            }
+
+            modal.style.display = 'flex';
+            window.incomingCaller = callerId;
+            window.currentCall = call; // কল অবজেক্ট সেভ রাখা
+        });
+
+        window.myPeer.on('error', (err) => {
+            console.log("PeerJS Error:", err);
+            if(err.type === 'unavailable-id') {
+                // যদি আইডি আগে থেকেই থাকে, রিকানেক্ট করার চেষ্টা বা ইগনোর
+                console.log("ID already taken, maybe tab refresh");
+            }
+        });
+    } else {
+        console.log("PeerJS library not loaded!");
+    }
 }
 
 // ================= অথেনটিকেশন (সরাসরি - OTP ছাড়া) =================
@@ -4029,24 +4065,38 @@ let callRingtone = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e
 let currentCallType = 'video'; // ডিফল্ট
 
 // ১. কল শুরু করা (Caller)
-function startCall(type) {
+async function startCall(type) {
     if (!currentChatFriend) return alert("চ্যাট ওপেন করুন!");
-
-    currentCallType = type; // টাইপ সেভ রাখা (audio / video)
     
-    // নিজের স্ক্রিনে মেসেজ
-    const icon = type === 'video' ? '📹' : '📞';
-    appendMessage(`${icon} Calling ${currentChatFriend}...`, 'my-msg');
+    // ১. নিজের ক্যামেরা অন করা
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: (type === 'video'), 
+            audio: true 
+        });
+        
+        document.getElementById('video-call-screen').style.display = 'block';
+        document.getElementById('local-video').srcObject = stream;
+        localStream = stream;
 
-    // সার্ভারে পাঠানো
-    socket.emit('call_user', {
-        sender: currentUser,
-        receiver: currentChatFriend,
-        type: type // 'audio' or 'video'
-    });
+        // ২. বন্ধুকে কল করা (PeerJS দিয়ে)
+        const call = myPeer.call(currentChatFriend, stream);
+        
+        // ৩. তার ভিডিও রিসিভ করা (যখন সে রিসিভ করবে)
+        call.on('stream', (remoteStream) => {
+            document.getElementById('remote-video').srcObject = remoteStream;
+        });
 
-    callRingtone.loop = true;
-    callRingtone.play().catch(e=>{});
+        // ৪. নোটিফিকেশন পাঠানো (Socket দিয়ে, যাতে সে অনলাইনে না থাকলেও জানে)
+        socket.emit('call_user', {
+            sender: currentUser,
+            receiver: currentChatFriend,
+            type: type
+        });
+
+    } catch (err) {
+        alert("ক্যামেরা/মাইক সমস্যা!");
+    }
 }
 
 // ২. ইনকামিং কল রিসিভ করা
@@ -4071,15 +4121,29 @@ socket.on('incoming_call', (data) => {
 // ৩. কল এক্সেপ্ট করা
 async function acceptCall() {
     callRingtone.pause();
-    callRingtone.currentTime = 0;
-    
     document.getElementById('incoming-call-modal').style.display = 'none';
-    
-    // সার্ভারে জানানো যে এক্সেপ্ট হয়েছে
-    socket.emit('answer_call', { sender: currentUser, receiver: window.incomingCaller });
 
-    // ভিডিও স্ক্রিন ওপেন এবং ক্যামেরা চালু
-    openVideoScreen();
+    // ১. নিজের ক্যামেরা/মাইক অন করা
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        
+        // নিজের ভিডিও দেখানো
+        document.getElementById('video-call-screen').style.display = 'block';
+        document.getElementById('local-video').srcObject = stream;
+        localStream = stream;
+
+        // ২. কলের উত্তর দেওয়া (ভিডিও স্ট্রিম সহ)
+        if(window.currentCall) {
+            window.currentCall.answer(stream);
+            
+            // ৩. অপর পাশের ভিডিও রিসিভ করা
+            window.currentCall.on('stream', (remoteStream) => {
+                document.getElementById('remote-video').srcObject = remoteStream;
+            });
+        }
+    } catch (err) {
+        alert("ক্যামেরা এক্সেস পাওয়া যায়নি!");
+    }
 }
 
 // ৪. কল রিজেক্ট করা
