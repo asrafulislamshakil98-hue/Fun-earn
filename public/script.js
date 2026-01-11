@@ -600,42 +600,43 @@ function increaseBadgeCount() {
 function addNotificationToUI(data) {
     const notifBox = document.getElementById('notification-box');
     
-    // আইকন সেট করা টাইপ অনুযায়ী
+    // আইকন সেট করা
     let icon = '🔔';
-    if(data.type === 'like') icon = '❤️';
-    if(data.type === 'comment') icon = '💬';
-    if(data.type === 'message') icon = '📨';
-    if(data.type === 'upload') icon = '🎬';
+    if (data.type === 'like') icon = '❤️';
+    if (data.type === 'coin') icon = '🪙';
+    if (data.type === 'comment') icon = '💬';
+    if (data.type === 'message') icon = '📨';
+    if (data.type === 'upload') icon = '🎬';
 
     const div = document.createElement('div');
     div.className = 'notif-item';
-    div.style.padding = "10px";
-    div.style.borderBottom = "1px solid #eee";
-    div.style.cursor = "pointer";
-    div.style.display = "flex";
-    div.style.gap = "10px";
+    div.style.cssText = "padding:10px; border-bottom:1px solid #f0f2f5; cursor:pointer; display:flex; gap:10px; align-items:center; background:white;";
     
     div.innerHTML = `
-        <div style="font-size:20px;">${icon}</div>
+        <div style="font-size:20px; min-width:30px; text-align:center;">${icon}</div>
         <div>
-            <p style="margin:0; font-size:14px;">${data.message}</p>
-            <span style="font-size:11px; color:gray;">Just now</span>
+            <p style="margin:0; font-size:13px; font-weight:500;">${data.message}</p>
+            <span style="font-size:10px; color:gray;">Just now</span>
         </div>
     `;
 
-    // ক্লিক করলে কী হবে
+    // ক্লিক ইভেন্ট
     div.onclick = function() {
         if(data.type === 'message') {
-            openChat(data.sender); // চ্যাট ওপেন হবে
+            openChat(data.sender);
         } else {
-            // পোস্ট বা আপলোড হলে সেখানে নিয়ে যাবে (আপাতত অ্যালার্ট)
-            alert("আপনাকে পোস্টে নিয়ে যাওয়া হচ্ছে..."); 
-            // এখানে আপনি নির্দিষ্ট পোস্টে স্ক্রল করার কোড বসাতে পারেন
+            // পোস্ট ভিউ বা অন্য অ্যাকশন
+            alert("ডিটেইলস দেখাচ্ছে..."); 
         }
     };
 
-    // বক্সের শুরুতে নতুন নোটিফিকেশন বসানো
-    notifBox.insertBefore(div, notifBox.children[2]); // hr এর পরে বসবে
+    // 👇 হেডার (h4) এর ঠিক পরে নতুন নোটিফিকেশন বসানো (সবচেয়ে উপরে)
+    const header = notifBox.querySelector('h4');
+    if (header && header.nextSibling) {
+        notifBox.insertBefore(div, header.nextSibling);
+    } else {
+        notifBox.appendChild(div);
+    }
 }
 
 // ৪. সাউন্ড (অপশনাল)
