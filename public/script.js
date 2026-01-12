@@ -4617,12 +4617,3 @@ function makeDraggable(element) {
         document.ontouchmove = null;
     }
 }
-
-// --- মেসেঞ্জার জেনারেল সেটিংস ওপেন ---
-function openChatGeneralSettings() {
-    // মেসেঞ্জার ড্রপডাউন বন্ধ করা (যাতে মোডাল দেখা যায়)
-    document.getElementById('messenger-dropdown').style.display = 'none';
-    
-    // মোডাল ওপেন
-    document.getElementById('messenger-settings-modal').style.display = 'flex';
-}
