@@ -787,6 +787,21 @@
         </div>
     </div>
 
+    <!-- ব্লক লিস্ট মোডাল -->
+    <div id="blocked-list-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="width: 400px; max-height: 80vh; overflow-y: auto;">
+        
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:10px;">
+                <h3 style="margin:0; color:red;">🚫 Blocked Users</h3>
+                <span onclick="document.getElementById('blocked-list-modal').style.display='none'" style="cursor:pointer; font-size:24px;">&times;</span>
+            </div>
+
+            <div id="blocked-users-container">
+                <p style="text-align:center;">লোডিং...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- মেইন স্ক্রিপ্ট ফাইল -->
     <script src="script.js"></script>
     

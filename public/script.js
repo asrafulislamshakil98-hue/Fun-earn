@@ -3842,47 +3842,148 @@ async function unblockUser(targetUser) {
     }
 }
 
-// ================= চ্যাট সেটিংস ফিচার (সম্পূর্ণ আপডেটেড) =================
+// ================= চ্যাট সেটিংস ও ব্লক সিস্টেম =================
 
-// ১. মেনু টগল (ডাইনামিক - ব্লক/মিউট স্ট্যাটাস চেক করে)
+// ১. সেটিংস মেনু টগল (আপডেটেড)
 async function toggleChatSettings() {
     const menu = document.getElementById('chat-settings-menu');
     
-    // মেনু যদি বন্ধ থাকে, তবে খোলার আগে ডাটা চেক করব
     if (menu.style.display === 'none' || menu.style.display === '') {
         try {
-            // ইউজারের বর্তমান ডাটা আনা (ব্লক/মিউট লিস্ট দেখার জন্য)
+            // ডাটা চেক
             const res = await fetch('/users');
             const allUsers = await res.json();
             const me = allUsers.find(u => u.username === currentUser);
 
-            // স্ট্যাটাস চেক করা
             const isBlocked = me.blockedUsers && me.blockedUsers.includes(currentChatFriend);
             const isMuted = me.mutedUsers && me.mutedUsers.includes(currentChatFriend);
 
-            // মেনুর HTML আপডেট করা (Theme, Delete, Mute, Block সব একসাথে)
             menu.innerHTML = `
                 <div onclick="changeChatTheme()">🎨 Change Theme</div>
                 <div onclick="deleteChatHistory()">🗑️ Delete Chat</div>
                 
-                <!-- ডাইনামিক মিউট বাটন -->
                 <div onclick="toggleMuteStatus('${isMuted}')">
-                    ${isMuted ? '🔊 Unmute Notifications' : '🔕 Mute Notifications'}
+                    ${isMuted ? '🔊 Unmute' : '🔕 Mute'}
                 </div>
 
-                <!-- ডাইনামিক ব্লক বাটন -->
+                <!-- 👇 ব্লক/আনব্লক বাটন -->
                 <div onclick="toggleBlockStatus('${isBlocked}')" style="color: red;">
                     ${isBlocked ? '✅ Unblock User' : '🚫 Block User'}
+                </div>
+
+                <!-- 👇 ব্লক লিস্ট দেখার বাটন -->
+                <div onclick="openBlockedListModal()" style="border-top:1px solid #eee; margin-top:5px; padding-top:5px;">
+                    📜 View Blocked List
                 </div>
             `;
 
             menu.style.display = 'block';
-        } catch (err) {
-            console.log("সেটিংস লোড সমস্যা", err);
-        }
+        } catch (err) { console.log(err); }
     } else {
         menu.style.display = 'none';
     }
+}
+
+// ২. ব্লক/আন-ব্লক টগল ফাংশন
+async function toggleBlockStatus(isBlocked) {
+    const currentStatus = (isBlocked === 'true');
+    const url = currentStatus ? '/unblock-user' : '/block-user';
+    const actionText = currentStatus ? "আনব্লক" : "ব্লক";
+
+    if(!confirm(`আপনি কি নিশ্চিত ${currentChatFriend}-কে ${actionText} করতে চান?`)) return;
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser, blockedUser: currentChatFriend })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            document.getElementById('chat-settings-menu').style.display = 'none';
+            
+            // ব্লক করলে চ্যাট বন্ধ হবে
+            if(!currentStatus) {
+                closeChat();
+                if(typeof loadPosts === 'function') loadPosts(); 
+            }
+        }
+    } catch (err) { alert("সার্ভার সমস্যা!"); }
+}
+
+// ৩. ব্লক লিস্ট মোডাল ওপেন করা
+async function openBlockedListModal() {
+    document.getElementById('chat-settings-menu').style.display = 'none';
+    
+    const modal = document.getElementById('blocked-list-modal');
+    const container = document.getElementById('blocked-users-container');
+    
+    modal.style.display = 'flex';
+    container.innerHTML = '<div style="text-align:center; padding:20px;">🔄 লোডিং...</div>';
+
+    try {
+        // ব্লক করা ইউজারদের লিস্ট আনা (সার্ভার থেকে)
+        // (আমাদের সার্ভারে /get-blocked-users রাউট থাকতে হবে, যা আগে বানিয়েছিলাম)
+        // যদি না থাকে তবে /users ফেচ করে ফিল্টার করব
+        
+        const res = await fetch('/users');
+        const allUsers = await res.json();
+        const me = allUsers.find(u => u.username === currentUser);
+        const blockedList = me.blockedUsers || [];
+
+        if (blockedList.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:gray;">কাউকে ব্লক করা হয়নি।</div>';
+            return;
+        }
+
+        let html = '';
+        blockedList.forEach(blockedName => {
+            const user = allUsers.find(u => u.username === blockedName);
+            const pic = user ? user.profilePic : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            
+            html += `
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:10px; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${pic}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                        <span style="font-weight:bold;">${blockedName}</span>
+                    </div>
+                    <button onclick="unblockUser('${blockedName}')" class="btn-secondary" style="border:1px solid red; color:red; font-size:12px; padding:5px 10px;">
+                        Unblock
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+    } catch (err) {
+        console.log(err);
+        container.innerHTML = '<p style="color:red; text-align:center;">সমস্যা হয়েছে!</p>';
+    }
+}
+
+// ৪. আনব্লক ফাংশন (লিস্ট থেকে)
+async function unblockUser(targetUser) {
+    if(!confirm(`আপনি কি ${targetUser}-কে আনব্লক করতে চান?`)) return;
+
+    try {
+        const res = await fetch('/unblock-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser, blockedUser: targetUser })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+            alert(data.message);
+            openBlockedListModal(); // লিস্ট রিফ্রেশ
+        } else {
+            alert("ব্যর্থ!");
+        }
+    } catch (err) { alert("সার্ভার সমস্যা"); }
 }
 
 // ২. চ্যাট থিম পরিবর্তন (রঙ বদলানো)
@@ -3947,36 +4048,6 @@ async function toggleMuteStatus(isMuted) {
     }
 }
 
-// ৫. ব্লক/আন-ব্লক টগল ফাংশন (Real Server)
-async function toggleBlockStatus(isBlocked) {
-    const currentStatus = (isBlocked === 'true');
-    const url = currentStatus ? '/unblock-user' : '/block-user';
-    const actionText = currentStatus ? "আনব্লক" : "ব্লক";
-
-    if(!confirm(`আপনি কি নিশ্চিত ${currentChatFriend}-কে ${actionText} করতে চান?`)) return;
-
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, blockedUser: currentChatFriend })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            alert(data.message);
-            document.getElementById('chat-settings-menu').style.display = 'none';
-            
-            // যদি ব্লক করা হয়, তবে চ্যাট বন্ধ করে দেওয়া ভালো
-            if(!currentStatus) {
-                closeChat();
-                if(typeof loadPosts === 'function') loadPosts(); 
-            }
-        }
-    } catch (err) {
-        alert("সার্ভার সমস্যা!");
-    }
-}
 
 // ================= সাধারণ পোস্ট কমেন্ট সিস্টেম =================
 
