@@ -4398,3 +4398,101 @@ function toggleFilterPanel() {
         panel.style.display = 'none';
     }
 }
+
+// ================= AR স্টিকার সিস্টেম (সহজ ভার্সন) =================
+
+const stickers = [
+    "https://cdn-icons-png.flaticon.com/512/166/166538.png", // চশমা
+    "https://cdn-icons-png.flaticon.com/512/744/744546.png", // গোঁফ
+    "https://cdn-icons-png.flaticon.com/512/194/194279.png", // কুকুর নাক
+    "https://cdn-icons-png.flaticon.com/512/4754/4754215.png", // টুপি
+    "https://cdn-icons-png.flaticon.com/512/1165/1165688.png"  // মাস্ক
+];
+
+// ১. স্টিকার প্যানেল ওপেন
+function toggleStickerPanel() {
+    const panel = document.getElementById('sticker-selection-panel');
+    const list = document.getElementById('sticker-list-container');
+    
+    // ফিল্টার প্যানেল বন্ধ করা (যাতে ওভারল্যাপ না হয়)
+    document.getElementById('filter-selection-panel').style.display = 'none';
+
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        if (list.innerHTML === '') {
+            stickers.forEach(src => {
+                list.innerHTML += `
+                    <img src="${src}" onclick="addStickerToVideo('${src}')" 
+                    style="width: 50px; height: 50px; cursor: pointer; background: white; border-radius: 10px; padding: 5px;">
+                `;
+            });
+        }
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// ২. ভিডিওতে স্টিকার বসানো
+function addStickerToVideo(src) {
+    const layer = document.getElementById('sticker-overlay-layer');
+    
+    // আগের স্টিকার মুছতে চাইলে: layer.innerHTML = ''; 
+    
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.position = 'absolute';
+    img.style.top = '50%';
+    img.style.left = '50%';
+    img.style.transform = 'translate(-50%, -50%)';
+    img.style.width = '150px';
+    img.style.pointerEvents = 'auto'; // যাতে ড্র্যাগ করা যায়
+    img.style.cursor = 'move';
+    
+    // ড্র্যাগ লজিক
+    makeDraggable(img);
+    
+    layer.appendChild(img);
+    toggleStickerPanel(); // প্যানেল বন্ধ
+}
+
+// ৩. ড্র্যাগ করার ফাংশন
+function makeDraggable(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    element.onmousedown = dragMouseDown;
+    element.ontouchstart = dragMouseDown; // মোবাইলের জন্য
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // মাউস বা টাচ পজিশন
+        pos3 = e.clientX || e.touches[0].clientX;
+        pos4 = e.clientY || e.touches[0].clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchend = closeDragElement;
+        document.ontouchmove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        // e.preventDefault();
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+
+        pos1 = pos3 - clientX;
+        pos2 = pos4 - clientY;
+        pos3 = clientX;
+        pos4 = clientY;
+        
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.ontouchend = null;
+        document.ontouchmove = null;
+    }
+}

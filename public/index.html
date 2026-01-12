@@ -584,6 +584,22 @@
                 <div onclick="alert('টাইমার শীঘ্রই আসছে!')">
                     <i class="fas fa-stopwatch"></i> <span>Timer</span>
                 </div>
+
+                <!-- সাইডবারে যোগ করুন -->
+                <div onclick="toggleStickerPanel()">
+                    <i class="fas fa-smile-beam"></i> <span>Stickers</span>
+                </div>
+
+                <!-- স্টিকার সিলেকশন প্যানেল (ফিল্টারের মতোই) -->
+                <div id="sticker-selection-panel" style="display: none; position: absolute; bottom: 120px; left: 0; width: 100%; z-index: 35; padding: 10px; background: rgba(0,0,0,0.7); overflow-x: auto; white-space: nowrap;">
+                   <span onclick="toggleStickerPanel()" style="position: sticky; left: 0; color: white; background: red; padding: 2px 8px; border-radius: 50%; cursor: pointer; font-weight: bold; margin-right: 10px;">&times;</span>
+                   <div id="sticker-list-container" style="display: inline-flex; gap: 15px;"></div>
+                </div>
+
+                <!-- ভিডিওর উপরে স্টিকার দেখানোর লেয়ার -->
+                <div id="sticker-overlay-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden;">
+                   <!-- এখানে স্টিকার বসবে -->
+                </div>
             </div>
 
             <!-- ৪. নিচের কন্ট্রোল (Upload, Record) -->
