@@ -2900,28 +2900,36 @@ function handleChatFileUpload() {
 }
 //10
 
-// --- চ্যাটে ফটো/ভিডিও আপলোড ও সেন্ড ফাংশন (আপডেটেড) ---
+// --- চ্যাটে ফাইল আপলোড এবং সেন্ড ফাংশন (ফিক্সড) ---
 async function handleChatFileUpload(type) {
     let fileInput;
 
-    // চেক করা কোন ইনপুট থেকে ফাইল আসছে
+    // কোন ইনপুট থেকে ফাইল আসছে তা ধরা
     if (type === 'photo') {
         fileInput = document.getElementById('chatPhotoInput');
     } else if (type === 'video') {
         fileInput = document.getElementById('chatVideoInput');
+    } else {
+        // যদি type না পাঠানো হয় (ক্যামেরা বা সাধারণ ফাইল)
+        fileInput = document.getElementById('chatFileInput');
+    }
+
+    // ফাইল আছে কিনা চেক
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        return console.log("কোনো ফাইল সিলেক্ট করা হয়নি");
     }
 
     const file = fileInput.files[0];
-    if (!file) return;
 
     // মেনু বন্ধ করা
-    document.getElementById('chat-attachment-menu').style.display = 'none';
+    const menu = document.getElementById('chat-attachment-menu');
+    if(menu) menu.style.display = 'none';
 
-    // লোডিং বাটন বা টোস্ট দেখাতে পারেন (অপশনাল)
-    // alert("ফাইল আপলোড হচ্ছে...");
+    // লোডিং দেখানো (অপশনাল)
+    // alert("আপলোড হচ্ছে...");
 
     const formData = new FormData();
-    formData.append('chatFile', file); // সার্ভারে নাম 'chatFile' ই থাকবে
+    formData.append('chatFile', file); // সার্ভারে নাম 'chatFile'
 
     try {
         const res = await fetch('/chat-upload', {
@@ -2931,29 +2939,33 @@ async function handleChatFileUpload(type) {
         const data = await res.json();
 
         if (data.success) {
+            console.log("File Uploaded:", data.mediaUrl); // কনসোলে লিংক দেখাবে
+
             const msgData = {
                 sender: currentUser,
                 receiver: currentChatFriend,
-                text: '',
-                mediaUrl: data.mediaUrl,
-                mediaType: data.mediaType // সার্ভার থেকেই টাইপ বলে দেবে (image/video)
+                text: '', // টেক্সট খালি
+                mediaUrl: data.mediaUrl, // সার্ভার থেকে পাওয়া লিংক
+                mediaType: data.mediaType
             };
             
+            // ১. সকেটে পাঠানো
             socket.emit('send_message', msgData);
-            //appendMessage(msgData, 'my-msg');
+
+            // ২. নিজের বক্সে দেখানো (সরাসরি appendMessage কল)
+            appendMessage(msgData, 'my-msg');
             
-            // ইনপুট রিসেট
+            // ৩. ইনপুট রিসেট
             fileInput.value = "";
             
         } else {
-            alert("আপলোড ব্যর্থ!");
+            alert("আপলোড ব্যর্থ: " + data.error);
         }
     } catch (err) {
         console.log(err);
         alert("সার্ভার এরর!");
     }
 }
-
 // --- লগআউট ফাংশন ---
 function logout() {
     // ১. ব্রাউজারের মেমোরি ক্লিয়ার করা
