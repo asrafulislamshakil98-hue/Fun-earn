@@ -2132,7 +2132,9 @@ async function openChat(friendName) {
 
         msgBox.innerHTML = ''; // ক্লিয়ার
         messages.forEach(msg => {
-            appendMessage(msg.text, msg.sender === currentUser ? 'my-msg' : 'friend-msg');
+        const type = msg.sender === currentUser ? 'my-msg' : 'friend-msg';
+        
+           appendMessage(msg, type); 
         });
         
         // স্ক্রল নিচে নামানো
@@ -2172,7 +2174,12 @@ socket.on('receive_message', (data) => {
         (data.sender === currentUser && data.receiver === currentChatFriend)
     ) {
         const type = data.sender === currentUser ? 'my-msg' : 'friend-msg';
-        appendMessage(data.text, type);
+        appendMessage(data. type);
+
+        if (data.sender !== currentUser) {
+            const audio = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e9/Ringtone_%283%29.ogg'); 
+            audio.play().catch(e => {});
+        }
     } else {
         // অন্য কেউ মেসেজ পাঠালে এখানে নোটিফিকেশন সাউন্ড বা অ্যালার্ট দিতে পারেন
         console.log("New message from", data.sender);
