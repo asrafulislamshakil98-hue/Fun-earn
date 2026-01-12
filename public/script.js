@@ -2179,46 +2179,77 @@ socket.on('receive_message', (data) => {
     }
 });
 
-// --- চ্যাট বক্সে মেসেজ যোগ করা (Text + Image + Link Support) ---
+// --- চ্যাট মেসেজ দেখানো (Media Fix Final) ---
 function appendMessage(data, className) {
-    // data যদি শুধু টেক্সট হয় (পুরনো কোড সাপোর্টের জন্য)
+    // ডাটা হ্যান্ডেলিং (যাতে টেক্সট এবং মিডিয়া দুইটাই সাপোর্ট করে)
     let text = typeof data === 'string' ? data : data.text;
-    let imageUrl = data.imageUrl || null;
+    
+    // মিডিয়া লিংক বের করা (যেকোনো একটা ফিল্ডে থাকলেই হবে)
+    let mediaUrl = data.mediaUrl || data.imageUrl || null;
+    let mediaType = data.mediaType || 'image';
+
+    // যদি টেক্সট 'undefined' হয় তবে খালি স্ট্রিং করা
+    if (!text || text === 'undefined') text = '';
 
     const div = document.createElement('div');
     div.className = className;
 
-    // ১. যদি ছবি থাকে
-    if (imageUrl) {
-        div.innerHTML = `
-            <img src="${imageUrl}" class="chat-msg-img" onclick="window.open('${imageUrl}', '_blank')" style="cursor:pointer;">
-        `;
-        // স্টাইল (style.css এ না থাকলে এখানে ইনলাইন দিচ্ছি)
-        div.style.padding = "5px";
-        div.style.background = "transparent"; 
+    // ১. যদি মিডিয়া (ছবি/ভিডিও) থাকে
+    if (mediaUrl) {
+        // ভিডিও ফাইল কিনা চেক (এক্সটেনশন বা টাইপ দিয়ে)
+        const isVideo = mediaType === 'video' || mediaUrl.match(/\.(mp4|webm|mkv)$/i);
+
+        if (isVideo) {
+            // ভিডিও প্লেয়ার
+            div.innerHTML = `
+                <video src="${mediaUrl}" controls class="chat-msg-video" style="max-width: 200px; border-radius: 10px; background:black; margin-top:5px;"></video>
+            `;
+        } else {
+            // ইমেজ
+            div.innerHTML = `
+                <img src="${mediaUrl}" class="chat-msg-img" onclick="window.open('${mediaUrl}', '_blank')" 
+                     style="max-width: 200px; height:auto; border-radius: 10px; cursor:pointer; margin-top:5px; border:2px solid white;">
+            `;
+        }
+        
+        // মিডিয়া বাবলের স্টাইল (স্বচ্ছ ব্যাকগ্রাউন্ড)
+        div.style.background = "transparent";
+        div.style.padding = "0";
+        div.style.border = "none";
+        div.style.boxShadow = "none";
     } 
-    // ২. যদি টেক্সট হয়
-    else if (text) {
+    
+    // ২. যদি টেক্সট থাকে (এবং মিডিয়া নেই)
+    else if (text && text.trim() !== "") {
         // লিংক ডিটেকশন
         const urlRegex = /(https?:\/\/[^\s]+)/g;
+        
         if (text.match(urlRegex)) {
-            div.innerHTML = text.replace(urlRegex, function(url) {
-                return `<a href="${url}" target="_blank" style="color: yellow; text-decoration: underline; font-weight: bold;">
-                            <i class="fas fa-map-marker-alt"></i> লিংক খুলুন
-                        </a>`;
-            });
+            div.innerHTML = text.replace(urlRegex, url => 
+                `<a href="${url}" target="_blank" style="color: yellow; text-decoration: underline; font-weight: bold;">
+                    <i class="fas fa-link"></i> লিংক খুলুন
+                </a>`
+            );
         } else {
             div.innerText = text;
         }
+        
+        // টেক্সট বাবলের স্টাইল (CSS থেকে পাবে)
+        // div.style.padding = "8px 12px"; 
+    }
+    
+    // ৩. যদি কিছুই না থাকে (নিরাপত্তা)
+    else {
+        return; // বাবল তৈরিই হবে না
     }
 
+    // মেসেজ বক্সে যোগ করা
     document.getElementById('chat-messages').appendChild(div);
     
     // অটো স্ক্রল
     const box = document.getElementById('chat-messages');
     box.scrollTop = box.scrollHeight;
 }
-
 function closeChat() {
     document.getElementById('chat-box').style.display = 'none';
     currentChatFriend = null;
