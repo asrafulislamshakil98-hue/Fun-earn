@@ -575,8 +575,8 @@
                 <div onclick="switchCamera()">
                     <i class="fas fa-sync-alt"></i> <span>Flip</span>
                 </div>
-                <div onclick="changeFilter()">
-                    <i class="fas fa-magic"></i> <span>Filter</span>
+                <div onclick="toggleFilterPanel()">
+                   <i class="fas fa-magic"></i> <span>Filter</span>
                 </div>
                 <div onclick="alert('স্পিড কন্ট্রোল শীঘ্রই আসছে!')">
                     <i class="fas fa-tachometer-alt"></i> <span>Speed</span>
@@ -588,6 +588,16 @@
 
             <!-- ৪. নিচের কন্ট্রোল (Upload, Record) -->
             <div class="creator-bottom-controls">
+
+                <!-- ফিল্টার সিলেকশন প্যানেল (লুকানো থাকবে) -->
+                <div id="filter-selection-panel" style="display: none; position: absolute; bottom: 120px; left: 0; width: 100%; z-index: 30; padding: 10px; background: rgba(0,0,0,0.6); overflow-x: auto; white-space: nowrap;">
+    
+                <!-- ক্লোজ বাটন -->
+                <span onclick="toggleFilterPanel()" style="position: sticky; left: 0; color: white; background: red; padding: 2px 8px; border-radius: 50%; cursor: pointer; font-weight: bold; margin-right: 10px;">&times;</span>
+
+                <!-- ফিল্টার আইটেমগুলো এখানে জাভাস্ক্রিপ্ট দিয়ে বসবে -->
+                <div id="filter-list-container" style="display: inline-flex; gap: 10px;"></div>
+                </div>
             
                 <!-- আপলোড বাটন (গ্যালারি থেকে) -->
                 <div class="creator-action-btn" onclick="document.getElementById('shortGalleryInput').click()">

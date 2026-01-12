@@ -4334,3 +4334,83 @@ function endCall() {
     }
     callRingtone.pause();
 }
+
+// ================= ফিল্টার সিস্টেম (Advanced) =================
+
+// ১. ৫০টি ফিল্টারের তালিকা (CSS Filter Effects)
+const videoFilters = [
+    { name: "Normal", value: "none", color: "#fff" },
+    { name: "Sepia", value: "sepia(1)", color: "#d2b48c" },
+    { name: "Gray", value: "grayscale(1)", color: "#808080" },
+    { name: "Invert", value: "invert(1)", color: "#000" },
+    { name: "Saturate", value: "saturate(2)", color: "#ff4500" },
+    { name: "Contrast", value: "contrast(2)", color: "#00008b" },
+    { name: "Brightness", value: "brightness(1.5)", color: "#ffff00" },
+    { name: "Blur", value: "blur(2px)", color: "#a9a9a9" },
+    { name: "Hue 90", value: "hue-rotate(90deg)", color: "#00ff00" },
+    { name: "Hue 180", value: "hue-rotate(180deg)", color: "#0000ff" },
+    { name: "Hue 270", value: "hue-rotate(270deg)", color: "#800080" },
+    { name: "Vintage", value: "sepia(0.5) contrast(1.2)", color: "#cd853f" },
+    { name: "Dreamy", value: "blur(1px) brightness(1.2)", color: "#ffc0cb" },
+    { name: "Dark", value: "brightness(0.6) contrast(1.5)", color: "#2f4f4f" },
+    // ... আপনি চাইলে আরও যোগ করতে পারেন বা লুপ দিয়ে বাড়াতে পারেন
+];
+
+// ২. ফিল্টার প্যানেল টগল এবং লোড করা
+function toggleFilterPanel() {
+    const panel = document.getElementById('filter-selection-panel');
+    const container = document.getElementById('filter-list-container');
+
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        
+        // যদি খালি থাকে তবে ফিল্টার লোড করা
+        if (container.innerHTML === '') {
+            loadFilters();
+        }
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// ৩. ফিল্টার লোড করা (৫০টি বানানোর লুপ)
+function loadFilters() {
+    const container = document.getElementById('filter-list-container');
+    let html = '';
+
+    // বেসিক ফিল্টারগুলো আগে বসাই
+    videoFilters.forEach((filter, index) => {
+        html += createFilterItem(filter, index);
+    });
+
+    // বাকি ফিল্টারগুলো রেন্ডমলি জেনারেট করা (৫০টি পূরণের জন্য)
+    for (let i = videoFilters.length; i < 50; i++) {
+        const hue = Math.floor(Math.random() * 360);
+        const sat = Math.floor(Math.random() * 5) + 1;
+        const randomFilter = { 
+            name: `Effect ${i+1}`, 
+            value: `hue-rotate(${hue}deg) saturate(${sat})`, 
+            color: `hsl(${hue}, 100%, 50%)`
+        };
+        html += createFilterItem(randomFilter, i);
+    }
+
+    container.innerHTML = html;
+}
+
+// ৪. ফিল্টার আইটেম HTML
+function createFilterItem(filter, index) {
+    return `
+    <div onclick="applyFilter('${filter.value}')" style="text-align: center; cursor: pointer;">
+        <div style="width: 50px; height: 50px; border-radius: 50%; background: ${filter.color}; border: 2px solid white; margin-bottom: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);"></div>
+        <span style="font-size: 10px; color: white;">${filter.name}</span>
+    </div>`;
+}
+
+// ৫. ভিডিওতে ফিল্টার অ্যাপ্লাই করা
+function applyFilter(filterValue) {
+    const video = document.getElementById('creator-video-preview');
+    if (video) {
+        video.style.filter = filterValue;
+    }
+}
