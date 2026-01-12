@@ -242,6 +242,14 @@
                     <button onclick="toggleChatSettings()" title="Settings" style="background: rgba(255,255,255,0.3);">
                     <i class="fas fa-cog"></i>
                     </button>
+
+                    <!-- সেটিংস ড্রপডাউন মেনু -->
+                    <div id="chat-settings-menu" class="chat-settings-dropdown" style="display: none;">
+                        <div onclick="changeChatTheme()">🎨 Change Theme</div>
+                        <div onclick="deleteChatHistory()">🗑️ Delete Chat</div>
+                        <div onclick="muteChat()">Hz Mute Notifications</div>
+                        <div onclick="blockChatUser()" style="color: red;">🚫 Block User</div>
+                    </div>
                 </div>
 
                 <button onclick="closeChat()" style="background:red; color:white;"><i class="fas fa-times"></i></button>
@@ -792,16 +800,36 @@
                 <span onclick="document.getElementById('blocked-list-modal').style.display='none'" style="cursor:pointer; font-size:24px;">&times;</span>
             </div>
 
-            <!-- সেটিংস ড্রপডাউন মেনু -->
-            <div id="chat-settings-menu" class="chat-settings-dropdown" style="display: none;">
-                <div onclick="changeChatTheme()">🎨 Change Theme</div>
-                <div onclick="deleteChatHistory()">🗑️ Delete Chat</div>
-                <div onclick="muteChat()">Hz Mute Notifications</div>
-            </div>
-
             <div id="blocked-users-container">
                 <p style="text-align:center;">লোডিং...</p>
             </div>
+        </div>
+    </div>
+
+    <!-- মেসেঞ্জার জেনারেল সেটিংস মোডাল -->
+    <div id="messenger-settings-modal" class="modal" style="display: none; z-index: 21000;">
+        <div class="modal-content" style="width: 300px; padding: 20px; text-align: left;">
+        
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:10px;">
+                <h3 style="margin:0;">Chat Settings</h3>
+                <span onclick="document.getElementById('messenger-settings-modal').style.display='none'" style="cursor:pointer; font-size:24px;">&times;</span>
+            </div>
+
+            <div class="menu-item" onclick="openBlockedListModal()">
+                <div class="icon-circle" style="background:#ffebee; color:red;"><i class="fas fa-ban"></i></div>
+                <span>Blocked Accounts</span>
+            </div>
+
+            <div class="menu-item" onclick="alert('Message Requests feature coming soon!')">
+                <div class="icon-circle" style="background:#e3f2fd; color:#1877f2;"><i class="fas fa-comment-dots"></i></div>
+                <span>Message Requests</span>
+            </div>
+
+            <div class="menu-item" onclick="alert('Active Status settings coming soon!')">
+               <div class="icon-circle" style="background:#e8f5e9; color:green;"><i class="fas fa-circle"></i></div>
+               <span>Active Status</span>
+            </div>
+
         </div>
     </div>
 
