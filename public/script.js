@@ -872,7 +872,11 @@ function renderShortSlide(post, allUsers) {
     // HTML স্ট্রাকচার
     return `
     <div class="short-slide" id="slide-${post._id}">
-        
+        <div onclick="openShortsMenu('${post._id}', '${post.username}', '${post.mediaUrl}')" 
+            style="position: absolute; top: 20px; right: 20px; z-index: 25; color: white; font-size: 24px; cursor: pointer; text-shadow: 0 2px 5px black;">
+            <i class="fas fa-ellipsis-v"></i>
+        </div>
+
         <!-- ভিডিও -->
         <video src="${post.mediaUrl}" loop class="reel-video" onclick="toggleVideo(this)"></video>
 
@@ -4616,4 +4620,55 @@ function makeDraggable(element) {
         document.ontouchend = null;
         document.ontouchmove = null;
     }
+}
+
+
+// --- শর্টস মেনু কন্ট্রোল ---
+
+// ১. মেনু ওপেন করা
+function openShortsMenu(postId, username, mediaUrl) {
+    const modal = document.getElementById('shorts-menu-modal');
+    const list = document.getElementById('shorts-menu-list');
+    
+    // ডাউনলোড ফাংশন রেডি করা
+    const downloadAction = `downloadMedia('${mediaUrl}', 'video')`;
+
+    let html = '';
+
+    // ক. যদি নিজের ভিডিও হয়
+    if (username === currentUser) {
+        html = `
+            <div class="shorts-menu-option" onclick="${downloadAction}">
+                <i class="fas fa-download"></i> <span>Save Video</span>
+            </div>
+            <div class="shorts-menu-option text-red" onclick="deletePost('${postId}')">
+                <i class="fas fa-trash-alt"></i> <span>Delete</span>
+            </div>
+        `;
+    } 
+    // খ. যদি অন্যের ভিডিও হয়
+    else {
+        html = `
+            <div class="shorts-menu-option" onclick="${downloadAction}">
+                <i class="fas fa-download"></i> <span>Save Video</span>
+            </div>
+            <div class="shorts-menu-option" onclick="alert('Not Interested হিসেবে মার্ক করা হয়েছে!')">
+                <i class="fas fa-eye-slash"></i> <span>Not Interested</span>
+            </div>
+            <div class="shorts-menu-option text-red" onclick="reportContent('${postId}', 'short')">
+                <i class="fas fa-flag"></i> <span>Report</span>
+            </div>
+            <div class="shorts-menu-option text-red" onclick="blockUser('${username}')">
+                <i class="fas fa-ban"></i> <span>Block ${username}</span>
+            </div>
+        `;
+    }
+
+    list.innerHTML = html;
+    modal.style.display = 'flex';
+}
+
+// ২. মেনু বন্ধ করা
+function closeShortsMenu() {
+    document.getElementById('shorts-menu-modal').style.display = 'none';
 }

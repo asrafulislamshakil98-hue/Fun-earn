@@ -802,6 +802,25 @@
         </div>
     </div>
 
+    <!-- শর্টস মেনু মোডাল (Bottom Sheet) -->
+    <div id="shorts-menu-modal" class="modal" style="display: none; z-index: 25000; align-items: flex-end;">
+        <div class="modal-content" style="width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; margin-bottom: 0; padding: 0; animation: slideUp 0.3s;">
+        
+            <!-- ১. ড্র্যাগ হ্যান্ডেল (ডিজাইনের জন্য) -->
+            <div style="width: 100%; display: flex; justify-content: center; padding: 10px;" onclick="closeShortsMenu()">
+               <div style="width: 50px; height: 5px; background: #ddd; border-radius: 10px;"></div>
+            </div>
+
+            <!-- ২. মেনু আইটেম কন্টেইনার (জাভাস্ক্রিপ্ট দিয়ে লোড হবে) -->
+            <div id="shorts-menu-list" style="padding: 10px 20px 30px 20px;">
+                <!-- অপশনগুলো এখানে আসবে -->
+            </div>
+
+            <!-- ৩. ক্যানসেল বাটন -->
+            <button onclick="closeShortsMenu()" style="width: 100%; padding: 15px; border: none; background: #f0f2f5; font-weight: bold; font-size: 16px; cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+
     <!-- মেইন স্ক্রিপ্ট ফাইল -->
     <script src="script.js"></script>
     
