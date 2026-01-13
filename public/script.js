@@ -4672,3 +4672,76 @@ function openShortsMenu(postId, username, mediaUrl) {
 function closeShortsMenu() {
     document.getElementById('shorts-menu-modal').style.display = 'none';
 }
+
+// ================= ভিডিও কল কন্ট্রোল ফাংশন =================
+
+// ১. ভিডিও অফ/অন করা
+function toggleVideoMute() {
+    const videoTrack = localStream.getVideoTracks()[0];
+    const btn = document.getElementById('btn-video-mute');
+
+    if (videoTrack.enabled) {
+        videoTrack.enabled = false; // ভিডিও অফ
+        btn.classList.add('off');
+        btn.innerHTML = '<i class="fas fa-video-slash"></i>';
+    } else {
+        videoTrack.enabled = true; // ভিডিও অন
+        btn.classList.remove('off');
+        btn.innerHTML = '<i class="fas fa-video"></i>';
+    }
+}
+
+// ২. অডিও মিউট/আনমিউট করা
+function toggleAudioMute() {
+    const audioTrack = localStream.getAudioTracks()[0];
+    const btn = document.getElementById('btn-audio-mute');
+
+    if (audioTrack.enabled) {
+        audioTrack.enabled = false; // মিউট
+        btn.classList.add('off');
+        btn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+    } else {
+        audioTrack.enabled = true; // আনমিউট
+        btn.classList.remove('off');
+        btn.innerHTML = '<i class="fas fa-microphone"></i>';
+    }
+}
+
+// ৩. ক্যামেরা সুইচ (Flip) - Front/Back
+let currentFacingMode = 'user'; // user = front, environment = back
+
+async function switchCameraMode() {
+    // বর্তমান ট্র্যাক বন্ধ করা
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+
+    // মোড পরিবর্তন
+    currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+
+    try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: currentFacingMode },
+            audio: true
+        });
+
+        localStream = newStream;
+        document.getElementById('local-video').srcObject = newStream;
+
+        // পিসির জন্য বাটন কাজ করবে না কারণ পিসিতে সাধারণত একটাই ক্যামেরা থাকে
+        // মোবাইলে এটি ফ্রন্ট/ব্যাক ক্যামেরা সুইচ করবে
+
+        // যদি কল রানিং থাকে, তবে নতুন স্ট্রিম পাঠাতে হবে (Replace Track)
+        if (window.currentCall) {
+            const videoTrack = newStream.getVideoTracks()[0];
+            const sender = window.currentCall.peerConnection.getSenders().find(s => s.track.kind === videoTrack.kind);
+            if (sender) {
+                sender.replaceTrack(videoTrack);
+            }
+        }
+
+    } catch (err) {
+        console.log("Camera switch error:", err);
+        alert("ক্যামেরা সুইচ করা যাচ্ছে না!");
+    }
+}

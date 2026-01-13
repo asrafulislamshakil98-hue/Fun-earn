@@ -2177,3 +2177,45 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
 
 /* লাল টেক্সট (Delete/Block/Report এর জন্য) */
 .text-red { color: red; }
+
+/* --- ভিডিও কল কন্ট্রোল ডিজাইন --- */
+.call-controls {
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    z-index: 20;
+}
+
+.control-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: 0.2s;
+}
+
+.control-btn:hover { background: rgba(255, 255, 255, 0.4); }
+
+/* অফ থাকলে লাল দেখাবে */
+.control-btn.off {
+    background: white;
+    color: black;
+}
+
+/* এন্ড কল বাটন লাল */
+.end-call {
+    background: red;
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+}
+.end-call:hover { background: darkred; }

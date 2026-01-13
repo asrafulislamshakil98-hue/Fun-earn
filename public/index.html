@@ -780,10 +780,29 @@
             <!-- লোকাল ভিডিও (আমার ভিডিও - ছোট করে কোণায়) -->
             <video id="local-video" autoplay muted style="position: absolute; bottom: 20px; right: 20px; width: 100px; height: 150px; object-fit: cover; border-radius: 10px; border: 2px solid white;"></video>
 
-            !-- কল কাটার বাটন -->
-            <button onclick="endCall()" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; border-radius: 50%; background: red; color: white; border: none; cursor: pointer; font-size: 24px;">
-                <i class="fas fa-phone-slash"></i>
-            </button>
+            <!-- 👇 কন্ট্রোল বাটন (নিচে) -->
+            <div class="call-controls">
+            
+                <!-- ১. ক্যামেরা অফ/অন -->
+                <button onclick="toggleVideoMute()" id="btn-video-mute" class="control-btn">
+                    <i class="fas fa-video"></i>
+                </button>
+
+                <!-- ২. কল কাটা (End Call) -->
+                <button onclick="endCall()" class="control-btn end-call">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+
+                <!-- ৩. মাইক অফ/অন (Mute) -->
+                <button onclick="toggleAudioMute()" id="btn-audio-mute" class="control-btn">
+                    <i class="fas fa-microphone"></i>
+                </button>
+
+                <!-- ৪. ক্যামেরা সুইচ (Flip) - শুধু মোবাইলে কাজ করবে -->
+                <button onclick="switchCameraMode()" class="control-btn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>    
         </div>
     </div>
 
