@@ -4247,6 +4247,7 @@ async function startCall(type) {
             call.on('stream', (remoteStream) => {
                 const remoteVideoElement = document.getElementById('remote-video');
                 remoteVideoElement.srcObject = remoteStream;
+                startCallTimer();
                 
                 // অডিও কল হলে শুধু সাউন্ড আসবে, ভিডিও দেখাবে না
                 if (type === 'audio') {
@@ -4306,7 +4307,7 @@ socket.on('incoming_call', (data) => {
     }
 });
 
-// --- ৩. কল এক্সেপ্ট করা (Socket + PeerJS) ---
+// --- ৩. কল এক্সেপ্ট করা (Socket + PeerJS + Timer) ---
 async function acceptCall() {
     // ১. রিংটোন বন্ধ করা
     if(typeof callRingtone !== 'undefined') {
@@ -4315,7 +4316,8 @@ async function acceptCall() {
     }
     
     // মোডাল বন্ধ করা
-    document.getElementById('incoming-call-modal').style.display = 'none';
+    const modal = document.getElementById('incoming-call-modal');
+    if(modal) modal.style.display = 'none';
     
     // ২. সার্ভারে জানানো (যাতে অপরপক্ষ জানে আপনি রিসিভ করেছেন)
     if(typeof socket !== 'undefined') {
@@ -4325,7 +4327,6 @@ async function acceptCall() {
     // ৩. ক্যামেরা এবং ভিডিও স্ক্রিন চালু করা
     try {
         // অডিও/ভিডিও পারমিশন নেওয়া
-        // (এখানে currentCallType চেক করা হচ্ছে, যদি অডিও হয় তবে video: false)
         const constraints = {
             audio: true,
             video: (typeof currentCallType !== 'undefined' && currentCallType === 'video')
@@ -4347,12 +4348,17 @@ async function acceptCall() {
             localVid.style.display = 'none'; // অডিও হলে নিজের ভিডিও অফ
             screen.style.background = '#222'; // কালো ব্যাকগ্রাউন্ড
         }
+        
+        // 👇 ৪. টাইমার চালু করা (নতুন যোগ করা হয়েছে)
+        if(typeof startCallTimer === 'function') {
+            startCallTimer();
+        }
 
-        // ৪. PeerJS দিয়ে কলের উত্তর দেওয়া (স্ট্রিম পাঠানো)
+        // ৫. PeerJS দিয়ে কলের উত্তর দেওয়া (স্ট্রিম পাঠানো)
         if (window.currentCall) {
             window.currentCall.answer(stream); // আমার স্ট্রিম পাঠানো হলো
             
-            // ৫. অপর পাশের স্ট্রিম রিসিভ করা
+            // ৬. অপর পাশের স্ট্রিম রিসিভ করা
             window.currentCall.on('stream', (remoteStream) => {
                 const remoteVid = document.getElementById('remote-video');
                 remoteVid.srcObject = remoteStream;
@@ -4745,3 +4751,86 @@ async function switchCameraMode() {
         alert("ক্যামেরা সুইচ করা যাচ্ছে না!");
     }
 }
+
+// ================= কলিং টাইমার ও এন্ড লজিক =================
+
+let callTimerInterval;
+let callSeconds = 0;
+
+// ১. টাইমার শুরু করা
+function startCallTimer() {
+    const timerDisplay = document.getElementById('call-timer');
+    callSeconds = 0;
+    timerDisplay.innerText = "00:00";
+    
+    // আগের টাইমার থাকলে বন্ধ করা
+    clearInterval(callTimerInterval);
+
+    callTimerInterval = setInterval(() => {
+        callSeconds++;
+        const min = Math.floor(callSeconds / 60);
+        const sec = callSeconds % 60;
+        timerDisplay.innerText = `${min < 10 ? '0'+min : min}:${sec < 10 ? '0'+sec : sec}`;
+    }, 1000);
+}
+
+// ২. টাইমার বন্ধ করা
+function stopCallTimer() {
+    clearInterval(callTimerInterval);
+    document.getElementById('call-timer').innerText = "00:00";
+}
+
+// ৩. কল কেটে দিলে (End Call Button)
+function endCall() {
+    // টাইমার বন্ধ
+    stopCallTimer();
+
+    // স্ক্রিন বন্ধ
+    document.getElementById('video-call-screen').style.display = 'none';
+
+    // স্ট্রিম বন্ধ
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    
+    // পিয়ার কানেকশন বন্ধ
+    if (window.currentCall) {
+        window.currentCall.close();
+    }
+    
+    callRingtone.pause();
+
+    // সার্ভারে জানানো (যাতে অপর পক্ষের কলও কাটে)
+    // আমরা চেক করব কলটি রানিং ছিল কিনা, যাতে বারবার ইভেন্ট না যায়
+    if (currentChatFriend) {
+        socket.emit('end_call', { 
+            sender: currentUser, 
+            receiver: currentChatFriend 
+        });
+    }
+}
+
+// ৪. সার্ভার থেকে কল কাটার নির্দেশ আসলে (Both Side End)
+socket.on('call_ended', (data) => {
+    // চেক করা: কলটি কি আমার সাথে সম্পর্কিত?
+    if (
+        (data.sender === currentChatFriend && data.receiver === currentUser) || 
+        (data.sender === currentUser && data.receiver === currentChatFriend)
+    ) {
+        // অ্যালার্ট বা টোস্ট (অপশনাল)
+        // alert("কল শেষ হয়েছে");
+        
+        // সব বন্ধ করা (কিন্তু সার্ভারে আবার end_call পাঠাব না, লুপ হবে)
+        stopCallTimer();
+        document.getElementById('video-call-screen').style.display = 'none';
+        document.getElementById('incoming-call-modal').style.display = 'none';
+        
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+        if (window.currentCall) {
+            window.currentCall.close();
+        }
+        callRingtone.pause();
+    }
+});
