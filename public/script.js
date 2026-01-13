@@ -4392,22 +4392,6 @@ function rejectCall() {
     socket.emit('end_call', { sender: currentUser, receiver: window.incomingCaller });
 }
 
-// ৫. কল এক্সেপ্টেড হলে (Caller এর কাছে)
-socket.on('call_accepted', (data) => {
-    if (data.receiver === currentUser) {
-        callRingtone.pause();
-        // ভিডিও স্ক্রিন ওপেন
-        openVideoScreen();
-    }
-});
-
-// ৬. কল কেটে দিলে
-socket.on('call_ended', (data) => {
-    if (data.receiver === currentUser || data.sender === currentUser) {
-        alert("Call Ended");
-        endCall();
-    }
-});
 
 // ৭. ক্যামেরা/মাইক চালু করা (অডিও/ভিডিও লজিক সহ)
 async function openVideoScreen() {
@@ -4454,15 +4438,6 @@ async function openVideoScreen() {
         alert("মাইক্রোফোন বা ক্যামেরা পাওয়া যায়নি!");
         endCall();
     }
-}
-
-// ৮. কল শেষ করা
-function endCall() {
-    document.getElementById('video-call-screen').style.display = 'none';
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-    }
-    callRingtone.pause();
 }
 
 // ================= ফিল্টার সিস্টেম (ইমেজ থাম্বনেইল সহ) =================
@@ -4779,57 +4754,89 @@ function stopCallTimer() {
     document.getElementById('call-timer').innerText = "00:00";
 }
 
-// ৩. কল কেটে দিলে (End Call Button)
+// --- ৩. কল কেটে দিলে (End Call Button) - আপডেটেড ---
 function endCall() {
-    // টাইমার বন্ধ
+    // ১. সব টাইমার ও সাউন্ড বন্ধ করা
     stopCallTimer();
+    if(typeof callRingtone !== 'undefined') {
+        callRingtone.pause();
+        callRingtone.currentTime = 0;
+    }
 
-    // স্ক্রিন বন্ধ
-    document.getElementById('video-call-screen').style.display = 'none';
+    // ২. সব স্ক্রিন ও মোডাল জোর করে বন্ধ করা
+    const videoScreen = document.getElementById('video-call-screen');
+    const incomingModal = document.getElementById('incoming-call-modal');
+    
+    if(videoScreen) videoScreen.style.display = 'none';
+    if(incomingModal) incomingModal.style.display = 'none';
 
-    // স্ট্রিম বন্ধ
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+    // ৩. ক্যামেরা ও স্ট্রিম বন্ধ করা
+    if (window.localStream) {
+        window.localStream.getTracks().forEach(track => track.stop());
+        window.localStream = null;
     }
     
-    // পিয়ার কানেকশন বন্ধ
+    // ৪. পিয়ার কানেকশন বন্ধ করা
     if (window.currentCall) {
         window.currentCall.close();
+        window.currentCall = null;
     }
-    
-    callRingtone.pause();
 
-    // সার্ভারে জানানো (যাতে অপর পক্ষের কলও কাটে)
-    // আমরা চেক করব কলটি রানিং ছিল কিনা, যাতে বারবার ইভেন্ট না যায়
+    // ৫. সার্ভারে জানানো (যাতে অপর পক্ষের কলও কাটে)
     if (currentChatFriend) {
+        // এখানে আমরা sender/receiver ঠিক করে পাঠাবো
         socket.emit('end_call', { 
             sender: currentUser, 
             receiver: currentChatFriend 
         });
+        
+        // ইনকামিং কলের নামও ক্লিয়ার করা
+        if(window.incomingCaller) {
+             socket.emit('end_call', { 
+                sender: currentUser, 
+                receiver: window.incomingCaller 
+            });
+            window.incomingCaller = null;
+        }
     }
+    
+    // ৬. কোনো অ্যালার্ট দেখানোর দরকার নেই, সরাসরি বন্ধ হবে
+    console.log("Call Ended Locally");
 }
 
-// ৪. সার্ভার থেকে কল কাটার নির্দেশ আসলে (Both Side End)
+// --- ৪. সার্ভার থেকে কল কাটার নির্দেশ আসলে (Both Side End) ---
 socket.on('call_ended', (data) => {
     // চেক করা: কলটি কি আমার সাথে সম্পর্কিত?
     if (
         (data.sender === currentChatFriend && data.receiver === currentUser) || 
-        (data.sender === currentUser && data.receiver === currentChatFriend)
+        (data.sender === currentUser && data.receiver === currentChatFriend) ||
+        (data.sender === window.incomingCaller) // ইনকামিং কলার কেটে দিলেও
     ) {
-        // অ্যালার্ট বা টোস্ট (অপশনাল)
-        // alert("কল শেষ হয়েছে");
+        // ১. অ্যালার্ট বাদ দেওয়া হয়েছে (বিরক্তিকর পপ-আপ বন্ধ)
+        // alert("Call Ended"); 
         
-        // সব বন্ধ করা (কিন্তু সার্ভারে আবার end_call পাঠাব না, লুপ হবে)
+        // ২. সব বন্ধ করা
         stopCallTimer();
-        document.getElementById('video-call-screen').style.display = 'none';
-        document.getElementById('incoming-call-modal').style.display = 'none';
+        if(typeof callRingtone !== 'undefined') {
+            callRingtone.pause();
+            callRingtone.currentTime = 0;
+        }
+
+        const videoScreen = document.getElementById('video-call-screen');
+        const incomingModal = document.getElementById('incoming-call-modal');
         
-        if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
+        if(videoScreen) videoScreen.style.display = 'none';
+        if(incomingModal) incomingModal.style.display = 'none';
+        
+        if (window.localStream) {
+            window.localStream.getTracks().forEach(track => track.stop());
+            window.localStream = null;
         }
         if (window.currentCall) {
             window.currentCall.close();
+            window.currentCall = null;
         }
-        callRingtone.pause();
+        
+        console.log("Call Ended remotely by", data.sender);
     }
 });
