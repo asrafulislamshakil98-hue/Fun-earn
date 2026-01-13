@@ -4191,11 +4191,11 @@ let callRingtone = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e
 
 let currentCallType = 'video'; // ডিফল্ট
 
-// --- ১. কল শুরু করা (Caller) - Socket + PeerJS ---
+// --- ১. কল শুরু করা (Caller) - Socket + PeerJS + Timer ---
 async function startCall(type) {
     if (!currentChatFriend) return alert("চ্যাট ওপেন করুন!");
     
-    // টাইপ গ্লোবালি সেভ রাখা (ভিডিও/অডিও লজিকের জন্য)
+    // টাইপ গ্লোবালি সেভ রাখা
     currentCallType = type; 
 
     // চ্যাট বক্সে মেসেজ দেখানো
@@ -4243,12 +4243,16 @@ async function startCall(type) {
             const call = window.myPeer.call(currentChatFriend, stream);
             window.currentCall = call; // কল সেভ রাখা
 
-            // ৩. অপর পাশের ভিডিও/অডিও রিসিভ করা
+            // ৩. অপর পাশের ভিডিও/অডিও রিসিভ করা (Connected)
             call.on('stream', (remoteStream) => {
                 const remoteVideoElement = document.getElementById('remote-video');
                 remoteVideoElement.srcObject = remoteStream;
-                startCallTimer();
                 
+                // 👇 কল রিসিভ হলে টাইমার চালু হবে
+                if (typeof startCallTimer === 'function') {
+                    startCallTimer();
+                }
+
                 // অডিও কল হলে শুধু সাউন্ড আসবে, ভিডিও দেখাবে না
                 if (type === 'audio') {
                     const audioMsg = document.querySelector('#audio-call-ui h3');
@@ -4271,20 +4275,15 @@ async function startCall(type) {
         }
 
         // ৪. নোটিফিকেশন পাঠানো (Socket দিয়ে)
-        // এটি রিসিভারকে পপ-আপ দেখাবে এবং রিংটোন বাজাবে
         socket.emit('call_user', {
             sender: currentUser,
             receiver: currentChatFriend,
             type: type
         });
 
-        // নিজের দিকে রিংটোন বাজানো (অপশনাল)
-        // callRingtone.loop = true;
-        // callRingtone.play().catch(e=>{});
-
     } catch (err) {
         console.log(err);
-        alert("ক্যামেরা বা মাইক্রোফোন চালু করা যাচ্ছে না! পারমিশন দিন।");
+        alert("ক্যামেরা বা মাইক্রোফোন চালু করা যাচ্ছে না।");
     }
 }
 
