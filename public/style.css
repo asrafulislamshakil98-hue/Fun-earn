@@ -2232,3 +2232,40 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
     50% { opacity: 0.5; }
     100% { opacity: 1; }
 }
+
+/* --- ১. চ্যাট ফুটার ফিক্স (বাটন পাশাপাশি রাখা) --- */
+.glass-chat-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* বাটনগুলোর মাঝে সমান গ্যাপ */
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box; /* যাতে প্যাডিং সহ উইডথ ঠিক থাকে */
+}
+
+/* ইনপুট ফিল্ড যাতে বাকি জায়গা নেয় */
+#msgInput {
+    flex: 1; /* ফ্লেক্সবক্স ট্রিক */
+    min-width: 0; /* ছোট স্ক্রিনেও যাতে জায়গা পায় */
+}
+
+/* সেন্ড বাটন সাইজ ফিক্স */
+.send-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px; /* যাতে চ্যাপ্টা না হয় */
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0; /* অতিরিক্ত মার্জিন রিমুভ */
+}
+
+/* --- ২. অডিও প্লেয়ার ডিজাইন (স্লিম) --- */
+audio {
+    width: 220px;
+    height: 35px; /* উচ্চতা কমানো হয়েছে */
+    border-radius: 20px;
+    outline: none;
+    margin-top: 5px;
+}

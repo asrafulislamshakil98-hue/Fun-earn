@@ -2214,10 +2214,12 @@ function appendMessage(data, className) {
             `;
         } 
         // খ. অডিও ফাইল (নতুন যোগ করা হয়েছে)
-        else if (mediaType === 'audio' || mediaUrl.match(/\.(mp3|wav|ogg)$/i)) {
+       else if (mediaType === 'audio' || mediaUrl.match(/\.(mp3|wav|ogg)$/i)) {
             div.innerHTML = `
-                <audio controls src="${mediaUrl}" style="max-width: 220px; margin-top:5px; border-radius:20px; outline:none;"></audio>
+                <audio controls src="${mediaUrl}"></audio>
             `;
+            // অডিওর জন্য আলাদা ব্যাকগ্রাউন্ড বা প্যাডিং দিতে পারেন
+            div.style.padding = "5px";
         }
         // গ. ইমেজ ফাইল (ডিফল্ট)
         else {
