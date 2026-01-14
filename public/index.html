@@ -301,11 +301,19 @@
 
     <!-- ৩. ইনপুট বক্স -->
     <input type="text" id="msgInput" placeholder="Type a message...">
+
+    <button id="voice-record-btn" onmousedown="startVoiceRecording()" onmouseup="stopVoiceRecording()" ontouchstart="startVoiceRecording()" ontouchend="stopVoiceRecording()" style="color:#1877f2; background:none; border:none; font-size:18px; margin-right:5px;">
+        <i class="fas fa-microphone"></i>
+    </button>
     
     <!-- ৪. সেন্ড বাটন -->
     <button onclick="sendMessage()" class="send-btn">
         <i class="fas fa-paper-plane"></i>
     </button>
+    </div>
+
+    <div id="recording-indicator" style="display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%); background:red; color:white; padding:5px 15px; border-radius:20px; font-size:12px; animation:pulse 1s infinite;">
+       🎤 Recording...
     </div>
     </div>
 

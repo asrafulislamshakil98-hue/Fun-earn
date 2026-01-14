@@ -2219,3 +2219,16 @@ body.dark-mode input { background: #3a3b3c; color: white; border: none; }
     font-size: 24px;
 }
 .end-call:hover { background: darkred; }
+
+/* --- ভয়েস রেকর্ড বাটন স্টাইল --- */
+.recording-active {
+    color: red !important;
+    transform: scale(1.2);
+    transition: 0.2s;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}

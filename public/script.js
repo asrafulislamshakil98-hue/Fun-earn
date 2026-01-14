@@ -2234,6 +2234,13 @@ function appendMessage(data, className) {
         div.style.boxShadow = "none";
     } 
     
+    // 👇 নতুন: অডিও প্লেয়ার
+    else if (mediaType === 'audio' || mediaUrl.match(/\.(mp3|wav|ogg)$/i)) {
+        div.innerHTML = `
+            <audio controls src="${mediaUrl}" style="max-width: 200px; margin-top:5px; border-radius:20px;"></audio>
+        `;
+    } 
+
     // ২. যদি টেক্সট থাকে (এবং মিডিয়া নেই)
     else if (text && text.trim() !== "") {
         // লিংক ডিটেকশন
@@ -4870,4 +4877,90 @@ function timeAgo(dateString) {
     if (interval >= 1) return interval + " min" + (interval === 1 ? "" : "s") + " ago";
     
     return "Just now";
+}
+
+// ================= ভয়েস মেসেজ সিস্টেম =================
+
+let voiceRecorder = null;
+let voiceChunks = [];
+
+// ১. রেকর্ডিং শুরু (চেপে ধরলে)
+async function startVoiceRecording() {
+    const btn = document.getElementById('voice-record-btn');
+    const indicator = document.getElementById('recording-indicator');
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        voiceRecorder = new MediaRecorder(stream);
+        voiceChunks = [];
+
+        voiceRecorder.ondataavailable = event => {
+            voiceChunks.push(event.data);
+        };
+
+        voiceRecorder.onstop = sendVoiceMessage; // থামালে সেন্ড হবে
+
+        voiceRecorder.start();
+        
+        // UI আপডেট
+        btn.classList.add('recording-active');
+        indicator.style.display = 'block';
+
+    } catch (err) {
+        alert("মাইক্রোফোন এক্সেস পাওয়া যায়নি!");
+    }
+}
+
+// ২. রেকর্ডিং থামা (ছেড়ে দিলে)
+function stopVoiceRecording() {
+    if (voiceRecorder && voiceRecorder.state === "recording") {
+        voiceRecorder.stop();
+        
+        // স্ট্রিম বন্ধ করা
+        voiceRecorder.stream.getTracks().forEach(track => track.stop());
+    }
+
+    // UI রিসেট
+    document.getElementById('voice-record-btn').classList.remove('recording-active');
+    document.getElementById('recording-indicator').style.display = 'none';
+}
+
+// ৩. ভয়েস মেসেজ সেন্ড করা
+async function sendVoiceMessage() {
+    const audioBlob = new Blob(voiceChunks, { type: 'audio/webm' }); // অডিও ফাইল তৈরি
+    
+    // খুব ছোট রেকর্ডিং হলে বাতিল (ভুল ক্লিক)
+    if (audioBlob.size < 1000) return; 
+
+    const formData = new FormData();
+    // ফাইলের নাম দিচ্ছি .webm (ব্রাউজারে সাপোর্টেড)
+    const fileName = `voice_${Date.now()}.webm`;
+    formData.append('chatFile', audioBlob, fileName);
+
+    // আগের আপলোড ফাংশন ব্যবহার করে সার্ভারে পাঠানো
+    try {
+        const res = await fetch('/chat-upload', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            const msgData = {
+                sender: currentUser,
+                receiver: currentChatFriend,
+                text: '',
+                mediaUrl: data.mediaUrl,
+                mediaType: 'audio' // নতুন টাইপ 'audio'
+            };
+            
+            socket.emit('send_message', msgData);
+            
+            // নিজের বক্সে দেখানো (তবে ডুপ্লিকেট না হয় সেদিকে খেয়াল রাখতে হবে)
+            // যেহেতু socket.on এ আমরা appendMessage দিচ্ছি, তাই এখানে আর দরকার নেই
+            // appendMessage(msgData, 'my-msg'); 
+        }
+    } catch (err) {
+        console.log("Audio upload failed");
+    }
 }
