@@ -429,6 +429,8 @@ function createPostElement(post, feed, isFollowing, authorPic) {
     // ৮. কমেন্ট সংখ্যা
     const commentCount = post.comments ? post.comments.length : 0;
 
+    const timeString = timeAgo(post.createdAt);
+
     // ৯. HTML তৈরি
     const postDiv = document.createElement('div');
     postDiv.className = 'card post'; 
@@ -451,7 +453,7 @@ function createPostElement(post, feed, isFollowing, authorPic) {
                     ${followBtnHtml}
                 </div>
                 <span style="font-size:12px; color:gray;">
-                    Just now · ${privacyIcon}
+                    ${timeString} · ${privacyIcon}
                 </span>
             </div>
             
@@ -774,6 +776,7 @@ async function filterShorts() {
             const hasCoined = post.coinedBy && post.coinedBy.includes(currentUser);
             const coinColor = hasCoined ? '#fbc02d' : 'white';
             const coinAction = hasCoined ? '' : `giveCoin('${post._id}')`;
+            const timeString = timeAgo(post.createdAt);
 
             // 👇 onclick="openFullShorts(...)" এখানে ঠিক করা হয়েছে
             html += `
@@ -794,6 +797,7 @@ async function filterShorts() {
                             <h4 style="margin:0;">@${post.username}</h4>
                             ${followBtnHtml}
                         </div>
+                        <span style="font-size:10px; color:#ddd; display:block; margin-bottom:2px;">${timeString}</span>
                         <p class="shorts-caption">${post.caption || ''}</p>
                     </div>
                 </div>`;
@@ -4840,3 +4844,30 @@ socket.on('call_ended', (data) => {
         console.log("Call Ended remotely by", data.sender);
     }
 });
+
+// --- সময় ফরম্যাট করার ফাংশন (Relative Time) ---
+function timeAgo(dateString) {
+    const now = new Date();
+    const postDate = new Date(dateString);
+    const seconds = Math.floor((now - postDate) / 1000);
+
+    let interval = Math.floor(seconds / 31536000);
+    if (interval >= 1) return interval + " year" + (interval === 1 ? "" : "s") + " ago";
+    
+    interval = Math.floor(seconds / 2592000);
+    if (interval >= 1) return interval + " month" + (interval === 1 ? "" : "s") + " ago";
+    
+    interval = Math.floor(seconds / 86400);
+    if (interval >= 1) {
+        if(interval === 1) return "Yesterday";
+        return interval + " days ago";
+    }
+    
+    interval = Math.floor(seconds / 3600);
+    if (interval >= 1) return interval + " hour" + (interval === 1 ? "" : "s") + " ago";
+    
+    interval = Math.floor(seconds / 60);
+    if (interval >= 1) return interval + " min" + (interval === 1 ? "" : "s") + " ago";
+    
+    return "Just now";
+}
