@@ -2194,54 +2194,47 @@ socket.on('receive_message', (data) => {
     }
 });
 
-// --- চ্যাট মেসেজ দেখানো (Media Fix Final) ---
+// --- চ্যাট মেসেজ দেখানো (Image, Video, Audio Fix) ---
 function appendMessage(data, className) {
-    // ডাটা হ্যান্ডেলিং (যাতে টেক্সট এবং মিডিয়া দুইটাই সাপোর্ট করে)
-    let text = typeof data === 'string' ? data : data.text;
-    
-    // মিডিয়া লিংক বের করা (যেকোনো একটা ফিল্ডে থাকলেই হবে)
+    let text = typeof data === 'string' ? data : (data.text || '');
     let mediaUrl = data.mediaUrl || data.imageUrl || null;
     let mediaType = data.mediaType || 'image';
 
-    // যদি টেক্সট 'undefined' হয় তবে খালি স্ট্রিং করা
     if (!text || text === 'undefined') text = '';
 
     const div = document.createElement('div');
     div.className = className;
 
-    // ১. যদি মিডিয়া (ছবি/ভিডিও) থাকে
+    // ১. যদি কোনো মিডিয়া লিংক থাকে
     if (mediaUrl) {
-        // ভিডিও ফাইল কিনা চেক (এক্সটেনশন বা টাইপ দিয়ে)
-        const isVideo = mediaType === 'video' || mediaUrl.match(/\.(mp4|webm|mkv)$/i);
-
-        if (isVideo) {
-            // ভিডিও প্লেয়ার
+        // ক. ভিডিও ফাইল
+        if (mediaType === 'video' || mediaUrl.match(/\.(mp4|webm|mkv)$/i)) {
             div.innerHTML = `
                 <video src="${mediaUrl}" controls class="chat-msg-video" style="max-width: 200px; border-radius: 10px; background:black; margin-top:5px;"></video>
             `;
-        } else {
-            // ইমেজ
+        } 
+        // খ. অডিও ফাইল (নতুন যোগ করা হয়েছে)
+        else if (mediaType === 'audio' || mediaUrl.match(/\.(mp3|wav|ogg)$/i)) {
+            div.innerHTML = `
+                <audio controls src="${mediaUrl}" style="max-width: 220px; margin-top:5px; border-radius:20px; outline:none;"></audio>
+            `;
+        }
+        // গ. ইমেজ ফাইল (ডিফল্ট)
+        else {
             div.innerHTML = `
                 <img src="${mediaUrl}" class="chat-msg-img" onclick="window.open('${mediaUrl}', '_blank')" 
                      style="max-width: 200px; height:auto; border-radius: 10px; cursor:pointer; margin-top:5px; border:2px solid white;">
             `;
         }
         
-        // মিডিয়া বাবলের স্টাইল (স্বচ্ছ ব্যাকগ্রাউন্ড)
+        // মিডিয়া বাবল স্টাইল
         div.style.background = "transparent";
         div.style.padding = "0";
         div.style.border = "none";
         div.style.boxShadow = "none";
     } 
     
-    // 👇 নতুন: অডিও প্লেয়ার
-    else if (mediaType === 'audio' || mediaUrl.match(/\.(mp3|wav|ogg)$/i)) {
-        div.innerHTML = `
-            <audio controls src="${mediaUrl}" style="max-width: 200px; margin-top:5px; border-radius:20px;"></audio>
-        `;
-    } 
-
-    // ২. যদি টেক্সট থাকে (এবং মিডিয়া নেই)
+    // ২. যদি মিডিয়া না থাকে কিন্তু টেক্সট থাকে
     else if (text && text.trim() !== "") {
         // লিংক ডিটেকশন
         const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -2255,20 +2248,16 @@ function appendMessage(data, className) {
         } else {
             div.innerText = text;
         }
-        
-        // টেক্সট বাবলের স্টাইল (CSS থেকে পাবে)
-        // div.style.padding = "8px 12px"; 
+        // টেক্সট বাবল স্টাইল (CSS ক্লাস থেকে পাবে)
     }
     
-    // ৩. যদি কিছুই না থাকে (নিরাপত্তা)
+    // ৩. কিছুই না থাকলে
     else {
-        return; // বাবল তৈরিই হবে না
+        return; 
     }
 
-    // মেসেজ বক্সে যোগ করা
     document.getElementById('chat-messages').appendChild(div);
     
-    // অটো স্ক্রল
     const box = document.getElementById('chat-messages');
     box.scrollTop = box.scrollHeight;
 }
