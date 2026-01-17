@@ -4506,14 +4506,78 @@ function toggleFilterPanel() {
     }
 }
 
-// ================= AR স্টিকার সিস্টেম (সহজ ভার্সন) =================
+// ================= নতুন ৫০টি স্টিকার (TikTok স্টাইল) =================
 
 const stickers = [
-    "https://cdn-icons-png.flaticon.com/512/166/166538.png", // চশমা
-    "https://cdn-icons-png.flaticon.com/512/744/744546.png", // গোঁফ
-    "https://cdn-icons-png.flaticon.com/512/194/194279.png", // কুকুর নাক
-    "https://cdn-icons-png.flaticon.com/512/4754/4754215.png", // টুপি
-    "https://cdn-icons-png.flaticon.com/512/1165/1165688.png"  // মাস্ক
+    // চশমা (Glasses)
+    "https://cdn-icons-png.flaticon.com/512/166/166538.png", 
+    "https://cdn-icons-png.flaticon.com/512/187/187979.png", 
+    "https://cdn-icons-png.flaticon.com/512/4412/4412952.png", 
+    "https://cdn-icons-png.flaticon.com/512/616/616430.png", 
+    "https://cdn-icons-png.flaticon.com/512/3257/3257933.png", 
+    
+    // টুপি (Hats)
+    "https://cdn-icons-png.flaticon.com/512/4754/4754215.png",
+    "https://cdn-icons-png.flaticon.com/512/7479/7479705.png",
+    "https://cdn-icons-png.flaticon.com/512/1066/1066373.png",
+    "https://cdn-icons-png.flaticon.com/512/1973/1973839.png",
+    "https://cdn-icons-png.flaticon.com/512/3050/3050257.png",
+
+    // মাস্ক ও গোঁফ (Masks & Mustache)
+    "https://cdn-icons-png.flaticon.com/512/744/744546.png",
+    "https://cdn-icons-png.flaticon.com/512/1165/1165688.png",
+    "https://cdn-icons-png.flaticon.com/512/4204/4204987.png",
+    "https://cdn-icons-png.flaticon.com/512/3063/3063065.png",
+    "https://cdn-icons-png.flaticon.com/512/6276/6276859.png",
+
+    // ফানি ইমোজি (Funny Emojis)
+    "https://cdn-icons-png.flaticon.com/512/742/742751.png",
+    "https://cdn-icons-png.flaticon.com/512/742/742923.png",
+    "https://cdn-icons-png.flaticon.com/512/725/725107.png",
+    "https://cdn-icons-png.flaticon.com/512/742/742752.png",
+    "https://cdn-icons-png.flaticon.com/512/742/742918.png",
+
+    // পশু-পাখি (Animals)
+    "https://cdn-icons-png.flaticon.com/512/194/194279.png", // কুকুর
+    "https://cdn-icons-png.flaticon.com/512/616/616408.png", // বিড়াল
+    "https://cdn-icons-png.flaticon.com/512/3069/3069172.png", // পান্ডা
+    "https://cdn-icons-png.flaticon.com/512/194/194246.png", // বাঘ
+    "https://cdn-icons-png.flaticon.com/512/616/616438.png", // সিংহ
+
+    // লাভ ও হার্ট (Love)
+    "https://cdn-icons-png.flaticon.com/512/833/833472.png",
+    "https://cdn-icons-png.flaticon.com/512/1077/1077035.png",
+    "https://cdn-icons-png.flaticon.com/512/148/148836.png",
+    "https://cdn-icons-png.flaticon.com/512/2107/2107952.png",
+    "https://cdn-icons-png.flaticon.com/512/1216/1216656.png",
+
+    // ফায়ার ও ইফেক্ট (Fire & Effects)
+    "https://cdn-icons-png.flaticon.com/512/785/785116.png",
+    "https://cdn-icons-png.flaticon.com/512/426/426833.png",
+    "https://cdn-icons-png.flaticon.com/512/992/992482.png",
+    "https://cdn-icons-png.flaticon.com/512/2917/2917757.png",
+    "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
+
+    // টেক্সট বাবল (Text Bubbles)
+    "https://cdn-icons-png.flaticon.com/512/3050/3050474.png", // OMG
+    "https://cdn-icons-png.flaticon.com/512/3050/3050519.png", // WOW
+    "https://cdn-icons-png.flaticon.com/512/3050/3050478.png", // LOL
+    "https://cdn-icons-png.flaticon.com/512/3050/3050482.png", // YES
+    "https://cdn-icons-png.flaticon.com/512/3050/3050493.png", // NO
+
+    // মুকুট (Crowns)
+    "https://cdn-icons-png.flaticon.com/512/263/263100.png",
+    "https://cdn-icons-png.flaticon.com/512/1490/1490817.png",
+    "https://cdn-icons-png.flaticon.com/512/864/864685.png",
+    "https://cdn-icons-png.flaticon.com/512/619/619089.png",
+    "https://cdn-icons-png.flaticon.com/512/3028/3028574.png",
+
+    // অন্যান্য (Misc)
+    "https://cdn-icons-png.flaticon.com/512/2415/2415355.png", // গিটার
+    "https://cdn-icons-png.flaticon.com/512/1165/1165242.png", // ফুটবল
+    "https://cdn-icons-png.flaticon.com/512/2906/2906274.png", // মিউজিক
+    "https://cdn-icons-png.flaticon.com/512/2904/2904856.png", // ক্যামেরা
+    "https://cdn-icons-png.flaticon.com/512/2904/2904847.png"  // স্টার
 ];
 
 // ১. স্টিকার প্যানেল ওপেন
