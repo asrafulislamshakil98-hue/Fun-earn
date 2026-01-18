@@ -3506,38 +3506,85 @@ function closeTikTokCreator() {
     }
 }
 
-// ৩. রেকর্ডিং শুরু/বন্ধ (Toggle)
+// ================= স্টিকার সহ ভিডিও রেকর্ডিং (Canvas Recording) =================
+
+let recordingInterval;
+
 function toggleRecording() {
     const btn = document.getElementById('record-btn');
+    const video = document.getElementById('creator-video-preview');
+    const canvas = document.getElementById('composite-canvas');
+    const ctx = canvas.getContext('2d');
+    const stickerLayer = document.getElementById('sticker-overlay-layer');
+
+    // ক্যানভাস সাইজ ভিডিওর সমান করা
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
 
     if (btn.classList.contains('recording')) {
         // --- স্টপ রেকর্ডিং ---
         mediaRecorder.stop();
         btn.classList.remove('recording');
+        clearInterval(recordingInterval);
     } else {
         // --- স্টার্ট রেকর্ডিং ---
+        
+        // ক্যানভাস স্ট্রিম তৈরি করা (ভিডিও + স্টিকার)
+        const canvasStream = canvas.captureStream(30); // 30 FPS
+        
+        // অডিও এবং ভিডিও মিক্স করা
+        const audioTrack = creatorStream.getAudioTracks()[0];
+        const mixedStream = new MediaStream([...canvasStream.getTracks(), audioTrack]);
+
+        mediaRecorder = new MediaRecorder(mixedStream);
         recordedChunks = [];
-        mediaRecorder = new MediaRecorder(creatorStream);
 
         mediaRecorder.ondataavailable = event => {
             if (event.data.size > 0) recordedChunks.push(event.data);
         };
 
         mediaRecorder.onstop = () => {
-            // ভিডিও ব্লব তৈরি
             recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
             const videoUrl = URL.createObjectURL(recordedBlob);
             
-            // প্রিভিউ মোডাল দেখানো
-            const previewVideo = document.getElementById('final-preview');
-            previewVideo.src = videoUrl;
-            
-            closeTikTokCreator(); // ক্যামেরা বন্ধ
+            document.getElementById('final-preview').src = videoUrl;
+            closeTikTokCreator();
             document.getElementById('short-preview-modal').style.display = 'flex';
         };
 
         mediaRecorder.start();
         btn.classList.add('recording');
+
+        // --- লুপ: ক্যানভাসে ভিডিও এবং স্টিকার আঁকা ---
+        recordingInterval = setInterval(() => {
+            // ১. ভিডিও আঁকা
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // ফিল্টার অ্যাপ্লাই করা (যদি থাকে)
+            ctx.filter = video.style.filter || "none";
+
+            // ২. স্টিকার আঁকা (সব স্টিকার লুপ করে)
+            const stickers = stickerLayer.querySelectorAll('img');
+            stickers.forEach(sticker => {
+                // স্টিকারের পজিশন এবং সাইজ বের করা
+                const rect = sticker.getBoundingClientRect();
+                const videoRect = video.getBoundingClientRect();
+
+                // অনুপাত বের করা (ভিডিওর আসল সাইজ vs স্ক্রিন সাইজ)
+                const scaleX = canvas.width / videoRect.width;
+                const scaleY = canvas.height / videoRect.height;
+
+                const x = (rect.left - videoRect.left) * scaleX;
+                const y = (rect.top - videoRect.top) * scaleY;
+                const w = rect.width * scaleX;
+                const h = rect.height * scaleY;
+
+                ctx.drawImage(sticker, x, y, w, h);
+            });
+            
+            ctx.filter = "none"; // ফিল্টার রিসেট
+
+        }, 1000 / 30); // 30 FPS
     }
 }
 
@@ -4626,36 +4673,47 @@ function addStickerToVideo(src) {
     toggleStickerPanel(); // প্যানেল বন্ধ
 }
 
-// ৩. ড্র্যাগ করার ফাংশন
+// --- স্টিকার ড্র্যাগ এবং টাচ মুভ ---
 function makeDraggable(element) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    
-    element.onmousedown = dragMouseDown;
-    element.ontouchstart = dragMouseDown; // মোবাইলের জন্য
 
-    function dragMouseDown(e) {
-        e = e || window.event;
+    element.onmousedown = dragStart;
+    element.ontouchstart = dragStart; // মোবাইলের জন্য
+
+    function dragStart(e) {
         e.preventDefault();
-        // মাউস বা টাচ পজিশন
-        pos3 = e.clientX || e.touches[0].clientX;
-        pos4 = e.clientY || e.touches[0].clientY;
+        // মাউস বা টাচ ইভেন্ট চেক
+        if (e.type === 'touchstart') {
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+        } else {
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+        }
+
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
+        
         document.ontouchend = closeDragElement;
         document.ontouchmove = elementDrag;
     }
 
     function elementDrag(e) {
-        e = e || window.event;
-        // e.preventDefault();
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
+        let clientX, clientY;
+        
+        if (e.type === 'touchmove') {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
 
         pos1 = pos3 - clientX;
         pos2 = pos4 - clientY;
         pos3 = clientX;
         pos4 = clientY;
-        
+
         element.style.top = (element.offsetTop - pos2) + "px";
         element.style.left = (element.offsetLeft - pos1) + "px";
     }
@@ -4667,7 +4725,6 @@ function makeDraggable(element) {
         document.ontouchmove = null;
     }
 }
-
 
 // --- শর্টস মেনু কন্ট্রোল ---
 
