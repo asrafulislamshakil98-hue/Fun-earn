@@ -578,7 +578,6 @@
 
             <!-- ২. ক্যামেরা প্রিভিউ -->
             <video id="creator-video-preview" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; filter: none;"></video>
-            <canvas id="composite-canvas" style="display: none;"></canvas>
 
             <!-- ৩. ডান পাশের টুলস (Filters, Flip, Speed) -->
             <div class="creator-sidebar">
@@ -600,15 +599,26 @@
                     <i class="fas fa-smile-beam"></i> <span>Stickers</span>
                 </div>
 
-                <!-- স্টিকার সিলেকশন প্যানেল (ফিল্টারের মতোই) -->
-                <div id="sticker-selection-panel" style="display: none; position: absolute; bottom: 120px; left: 0; width: 100%; z-index: 35; padding: 10px; background: rgba(0,0,0,0.7); overflow-x: auto; white-space: nowrap;">
-                   <span onclick="toggleStickerPanel()" style="position: sticky; left: 0; color: white; background: red; padding: 2px 8px; border-radius: 50%; cursor: pointer; font-weight: bold; margin-right: 10px;">&times;</span>
-                   <div id="sticker-list-container" style="display: inline-flex; gap: 15px;"></div>
+                <!-- index.html এর sticker-selection-panel আপডেট করুন -->
+
+                <div id="sticker-selection-panel" class="sticker-panel" style="display: none;">
+    
+                    <!-- হেডার (ক্লোজ বাটন এবং টাইটেল) -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.8); position: sticky; top: 0; left: 0;">
+                        <span style="color: white; font-weight: bold;">Choose a Sticker</span>
+                        <span onclick="toggleStickerPanel()" style="color: white; background: red; padding: 5px 10px; border-radius: 50%; cursor: pointer;">&times;</span>
+                    </div>
+
+                    <!-- স্টিকার লিস্ট -->
+                    <div id="sticker-list-container" class="sticker-list">
+                     <!-- JS দিয়ে স্টিকার লোড হবে -->
+                    </div>
                 </div>
 
                 <!-- ভিডিওর উপরে স্টিকার দেখানোর লেয়ার -->
                 <div id="sticker-overlay-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden;">
                    <!-- এখানে স্টিকার বসবে -->
+                    <canvas id="composite-canvas" style="display: none;"></canvas>
                 </div>
             </div>
 

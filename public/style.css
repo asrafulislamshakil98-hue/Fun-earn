@@ -2269,3 +2269,56 @@ audio {
     outline: none;
     margin-top: 5px;
 }
+
+/* --- স্টিকার প্যানেল ডিজাইন (স্লাইড আপ) --- */
+.sticker-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%; /* স্ক্রিনের অর্ধেক পর্যন্ত আসবে */
+    background: rgba(20, 20, 20, 0.95); /* কালো কাঁচের মতো */
+    border-radius: 20px 20px 0 0;
+    z-index: 50;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+}
+
+/* স্লাইড এনিমেশন */
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* স্টিকার লিস্ট (গ্রিড আকারে দেখাবে) */
+.sticker-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* এক লাইনে ৪টি */
+    gap: 15px;
+    padding: 15px;
+    overflow-y: auto; /* স্ক্রল হবে */
+    flex: 1;
+}
+
+/* প্রতিটি স্টিকার আইটেম */
+.sticker-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.sticker-item:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+.sticker-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}

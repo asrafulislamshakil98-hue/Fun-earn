@@ -4627,22 +4627,27 @@ const stickers = [
     "https://cdn-icons-png.flaticon.com/512/2904/2904847.png"  // স্টার
 ];
 
-// ১. স্টিকার প্যানেল ওপেন
+// --- ১. স্টিকার প্যানেল ওপেন/ক্লোজ (আপডেটেড) ---
 function toggleStickerPanel() {
     const panel = document.getElementById('sticker-selection-panel');
     const list = document.getElementById('sticker-list-container');
     
-    // ফিল্টার প্যানেল বন্ধ করা (যাতে ওভারল্যাপ না হয়)
-    document.getElementById('filter-selection-panel').style.display = 'none';
+    // ফিল্টার প্যানেল বন্ধ করা
+    const filterPanel = document.getElementById('filter-selection-panel');
+    if(filterPanel) filterPanel.style.display = 'none';
 
     if (panel.style.display === 'none') {
-        panel.style.display = 'block';
-        if (list.innerHTML === '') {
+        panel.style.display = 'flex'; // ফ্লেক্স লেআউট
+
+        // স্টিকার লোড করা (যদি খালি থাকে)
+        if (list.innerHTML.trim() === '') {
             stickers.forEach(src => {
-                list.innerHTML += `
-                    <img src="${src}" onclick="addStickerToVideo('${src}')" 
-                    style="width: 50px; height: 50px; cursor: pointer; background: white; border-radius: 10px; padding: 5px;">
-                `;
+                const div = document.createElement('div');
+                div.className = 'sticker-item';
+                div.onclick = function() { addStickerToVideo(src); };
+                
+                div.innerHTML = `<img src="${src}">`;
+                list.appendChild(div);
             });
         }
     } else {
