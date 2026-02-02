@@ -3045,23 +3045,23 @@ function toggleAuth() {
     if(otpSection) otpSection.style.display = 'none';
 }
 
-// --- ১. লাইভ কয়েন ব্যালেন্স লোড করা ---
+// --- ১. লাইভ কয়েন ব্যালেন্স লোড করা (Safe Version) ---
 async function updateNavBalance() {
-    try {
-        // 👇 currentUser ঠিক আছে তো?
-        if (!currentUser) return; 
+    if (!currentUser) return; // ইউজার না থাকলে থামবে
 
+    try {
         const res = await fetch(`/my-balance/${encodeURIComponent(currentUser)}`);
         const data = await res.json();
         
         const navBalance = document.getElementById('nav-coin-balance');
         const menuBalance = document.getElementById('user-coin-balance');
 
+        // 👇 এখানে || 0 যোগ করা হয়েছে
         if(navBalance) navBalance.innerText = data.coins || 0;
         if(menuBalance) menuBalance.innerText = data.coins || 0;
         
     } catch(e) {
-        console.log("Balance load error");
+        console.log("Balance Error:", e);
     }
 }
 
