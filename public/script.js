@@ -3048,17 +3048,21 @@ function toggleAuth() {
 // --- ১. লাইভ কয়েন ব্যালেন্স লোড করা ---
 async function updateNavBalance() {
     try {
-        const res = await fetch(`/my-balance/${currentUser}`);
+        // 👇 currentUser ঠিক আছে তো?
+        if (!currentUser) return; 
+
+        const res = await fetch(`/my-balance/${encodeURIComponent(currentUser)}`);
         const data = await res.json();
         
         const navBalance = document.getElementById('nav-coin-balance');
         const menuBalance = document.getElementById('user-coin-balance');
 
-        // সব জায়গায় ব্যালেন্স আপডেট
-        if(navBalance) navBalance.innerText = data.coins;
-        if(menuBalance) menuBalance.innerText = data.coins;
+        if(navBalance) navBalance.innerText = data.coins || 0;
+        if(menuBalance) menuBalance.innerText = data.coins || 0;
         
-    } catch(e) {}
+    } catch(e) {
+        console.log("Balance load error");
+    }
 }
 
 // অ্যাপ চালু হলে ব্যালেন্স লোড হবে
